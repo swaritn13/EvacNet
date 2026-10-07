@@ -1,53 +1,32 @@
-# 🚨 EvacNet: Optimal Emergency Evacuation Route Planning Using Graph Algorithms (Map Edition)
+# 🚨 EvacNet: Real-World OpenStreetMap Emergency Evacuation Routing
 
-> **A real-time, interactive web application using dynamic graph algorithms (Dijkstra's Algorithm & A\* Search) and OpenStreetMap / Leaflet to route urban evacuations with virtual glowing LED path guidance.**
+> **A real-world interactive evacuation route planner built with the Original OpenStreetMap, OSRM real street routing engine, dynamic roadblock detours, and glowing LED path guidance.**
 
 ---
 
-## 🌟 What This System Does
+## 🌟 Key Features
 
-1. **Real City Map (Leaflet.js + OpenStreetMap)**:
-   - Loads a responsive, high-contrast dark urban map.
-   - Pinned with key municipal landmarks:
-     - 🏥 **Metro Hospitals & Trauma Centers**
-     - 🏫 **High Schools & Elementary Schools**
-     - 🚒 **Fire Stations & Rescue Units**
-     - 🛡️ **Designated Emergency Safe Shelters & Relief Centers**
-     - 🏘️ **Residential Districts & Commercial Plazas**
-2. **Interactive Road Blocking**:
-   - **Click any road directly on the map** to physically block it!
-   - Choose your hazard type: 🔥 **Fire**, 🌊 **Flood**, 🪨 **Fallen Debris**, or ⛔ **Police Barricade**.
-   - The road immediately converts into a flashing red hazard zone.
-3. **Dynamic Graph Rerouting**:
-   - The graph algorithm (**Dijkstra's Algorithm** / **A\* Search**) reacts in sub-millisecond time.
-   - Automatically recomputes the optimal escape route to the nearest safe shelter.
-4. **Animated Virtual LED Guidance Trail**:
-   - Renders a chain of **glowing green LED dots** directly on the map along the calculated route.
-   - LED dots pulse and travel sequentially in the direction of the safe shelter, simulating emergency exit runway lighting.
+1. **Original OpenStreetMap Connected**:
+   - Uses the official, standard **OpenStreetMap** tile layer with real street names, building footprints, parks, and rivers.
+   - Includes a layer switcher for **🗺️ Original OpenStreetMap**, **🛰️ Satellite Imagery (Esri)**, and **🏙️ Dark Mode (CartoDB)**.
+   - Built-in **City Search** powered by OpenStreetMap Nominatim: search any city or address worldwide!
+2. **Real Street Routing Engine (OSRM)**:
+   - Routes trace actual curved streets, turns, and highway corridors instead of artificial straight lines.
+   - Gives exact turn-by-turn directions with real street names and accurate meter distances.
+3. **Interactive Roadblock Placement & Dynamic Rerouting**:
+   - Switch to **"🚧 Click Map to Block Road"** and click anywhere on the map or along the route to drop a hazard (🔥 Fire, 🌊 Flood, 🪨 Debris, ⛔ Police Barricade).
+   - If a roadblock intersects the evacuation route, the algorithm **instantly calculates a detour on real clear streets**, bypassing the obstacle.
+4. **Animated Glowing LED Guidance Trail**:
+   - Sequential pulsing glowing green LED dots travel along the calculated route like an emergency exit runway light trail.
 5. **Zero Hardware Required**:
-   - Pure client-side web application. Open [`index.html`](file:///C:/Users/ASUS/EvacNet/index.html) in any web browser and it runs instantly with no installation, no server, and no ESP32.
-
----
-
-## 🗂️ Project Files
-
-```
-EvacNet/
-├── index.html       # Main application page with map viewport and command HUD
-├── style.css        # Command-center styling, custom marker badges, and glowing LED animations
-├── app.js           # Leaflet map setup, graph algorithms, road blocking, and turn-by-turn directions
-└── README.md        # Documentation and walkthrough
-```
+   - Pure client-side web application. Open `index.html` in any web browser and it runs instantly.
 
 ---
 
 ## 🚀 How to Run
 
-1. Open [`index.html`](file:///C:/Users/ASUS/EvacNet/index.html) in **Google Chrome**, **Microsoft Edge**, **Firefox**, or **Brave**.
-2. **Select Origin**: Choose where the evacuation starts (e.g. *Lincoln High School* or *West Elementary Academy*).
-3. **Select Objective**:
-   - Nearest Emergency Safe Shelter (automatically evaluates all shelters and finds the closest open one).
-   - Nearest Medical Hospital.
-   - Specific landmark.
-4. **Block a Road**: Click on any street on the map to place a roadblock (fire, flood, debris).
-5. Watch the glowing green LED trail dynamically divert around the blockage to safety!
+1. Open [`index.html`](file:///C:/Users/ASUS/Desktop/coding/EvacNet/index.html) in your browser.
+2. The map opens directly on the **Original OpenStreetMap** view with pinned landmarks (Schools, Hospitals, Shelters, Fire Stations).
+3. Click **"🚧 Click Map to Block Road"** on the left sidebar.
+4. Click on the green route to drop a roadblock (Fire / Flood / Debris).
+5. Watch the algorithm dynamically divert traffic around the roadblock to the nearest safe shelter!
