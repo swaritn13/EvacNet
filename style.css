@@ -43,10 +43,10 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 18px;
   z-index: 1000;
   flex-shrink: 0;
-  gap: 16px;
+  gap: 14px;
 }
 
 .brand {
@@ -61,7 +61,7 @@ body {
 }
 
 .brand h1 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.5px;
   background: linear-gradient(135deg, #00f2fe 0%, #38bdf8 100%);
@@ -86,18 +86,42 @@ body {
 }
 
 .subtitle {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-/* Header Search */
+/* Header City Controls & Search */
+.header-city-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 520px;
+}
+
+.header-select {
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--accent-cyan);
+  font-weight: 600;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+  max-width: 200px;
+}
+
+.header-select:focus {
+  border-color: var(--accent-cyan);
+}
+
 .header-search {
   display: flex;
   align-items: center;
   gap: 6px;
   flex: 1;
-  max-width: 380px;
 }
 
 .header-search input {
@@ -124,6 +148,7 @@ body {
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .btn-search:hover {
@@ -145,11 +170,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 90px;
+  min-width: 85px;
 }
 
 .stat-label {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -157,7 +182,7 @@ body {
 
 .stat-val {
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--accent-cyan);
 }
@@ -216,7 +241,7 @@ body {
 }
 
 .field-group {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .field-group label {
@@ -226,7 +251,18 @@ body {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
+}
+
+.field-subtext {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--accent-blue);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .input-with-action {
@@ -252,17 +288,23 @@ body {
 }
 
 .btn-icon-action {
-  padding: 0 12px;
+  padding: 0 10px;
   background: #1e293b;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--accent-cyan);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .btn-icon-action:hover {
   background: #334155;
+  color: #fff;
 }
 
 .action-btn {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EvacNet — Real Map Emergency Evacuation Route Planner</title>
+  <title>EvacNet — Global Emergency Evacuation Route Planner</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,15 +19,32 @@
       <div class="brand">
         <div class="brand-badge">🚨</div>
         <div>
-          <h1>EvacNet <span class="badge-tag">ORIGINAL OPENSTREETMAP</span></h1>
-          <p class="subtitle">Real-World Road Routing, Dynamic Roadblock Detours & Glowing LED Guidance</p>
+          <h1>EvacNet <span class="badge-tag">GLOBAL EDITION</span></h1>
+          <p class="subtitle">Dynamic Evacuation Routing & Roadblock Detours Anywhere in the World</p>
         </div>
       </div>
 
-      <!-- City Search Bar -->
-      <div class="header-search">
-        <input type="text" id="citySearchInput" placeholder="🔍 Search any city or address..." autocomplete="off">
-        <button id="btnSearchCity" class="btn-search">Search</button>
+      <!-- City Switcher & Search Bar -->
+      <div class="header-city-controls">
+        <select id="cityPresetSelect" class="header-select">
+          <option value="locate_me">📍 Use My Current Location (GPS)</option>
+          <optgroup label="India 🇮🇳">
+            <option value="pune" selected>🇮🇳 Pune, Maharashtra</option>
+            <option value="mumbai">🇮🇳 Mumbai, Maharashtra</option>
+            <option value="delhi">🇮🇳 New Delhi</option>
+            <option value="bengaluru">🇮🇳 Bengaluru, Karnataka</option>
+          </optgroup>
+          <optgroup label="International 🌐">
+            <option value="london">🇬🇧 London, UK</option>
+            <option value="tokyo">🇯🇵 Tokyo, Japan</option>
+            <option value="nyc">🇺🇸 New York City, USA</option>
+          </optgroup>
+        </select>
+
+        <div class="header-search">
+          <input type="text" id="citySearchInput" placeholder="🔍 Search any city, town, or address..." autocomplete="off">
+          <button id="btnSearchCity" class="btn-search">Go</button>
+        </div>
       </div>
 
       <!-- Metrics Badges -->
@@ -45,7 +62,7 @@
           <span class="stat-val" id="headerTime">-- min</span>
         </div>
         <div class="stat-pill">
-          <span class="stat-label">Blocked Roads</span>
+          <span class="stat-label">Roadblocks</span>
           <span class="stat-val stat-alert" id="headerBlockedCount">0</span>
         </div>
       </div>
@@ -61,22 +78,29 @@
             <h3>📍 Evacuation Route Dispatch</h3>
           </div>
           
+          <!-- Origin -->
           <div class="field-group">
             <label for="startNodeSelect">Evacuation Origin (Start Point):</label>
             <div class="input-with-action">
               <select id="startNodeSelect" class="styled-select"></select>
-              <button id="btnPickStartOnMap" class="btn-icon-action" title="Click anywhere on the map to place custom start point">🎯</button>
+              <button id="btnPickStartOnMap" class="btn-icon-action" title="Click anywhere on the map to set custom Start Point">🎯 Pick</button>
             </div>
+            <span class="field-subtext" id="startLocationLabel">Selected: School Sector</span>
           </div>
 
+          <!-- Destination -->
           <div class="field-group">
-            <label for="targetModeSelect">Destination Objective:</label>
-            <select id="targetModeSelect" class="styled-select">
-              <option value="nearest_shelter">🛡️ Nearest Emergency Safe Shelter</option>
-              <option value="nearest_hospital">🏥 Nearest Medical Emergency Hospital</option>
-              <option value="custom_target">🎯 Specific Landmark</option>
-              <option value="map_click">📍 Custom Clicked Point on Map</option>
-            </select>
+            <label for="targetModeSelect">Destination Objective (Safe Zone):</label>
+            <div class="input-with-action">
+              <select id="targetModeSelect" class="styled-select">
+                <option value="nearest_shelter">🛡️ Nearest Emergency Safe Shelter</option>
+                <option value="nearest_hospital">🏥 Nearest Medical Emergency Hospital</option>
+                <option value="custom_target">🎯 Specific Local Landmark</option>
+                <option value="map_click">📍 Custom Clicked Point on Map</option>
+              </select>
+              <button id="btnPickDestOnMap" class="btn-icon-action" title="Click anywhere on the map to set custom Destination">🎯 Pick</button>
+            </div>
+            <span class="field-subtext" id="targetLocationLabel">Selected: Nearest Safe Shelter</span>
           </div>
 
           <div class="field-group" id="customTargetWrapper" style="display: none;">
@@ -105,7 +129,7 @@
           </div>
           
           <p class="panel-hint" id="hazardInstruction">
-            Switch to <strong>"Click Map to Block Road"</strong> and click anywhere along the route to simulate a blockage!
+            Switch to <strong>"Click Map to Block Road"</strong> and click anywhere along the green route to simulate a blockage!
           </p>
 
           <div class="hazard-palette">
@@ -167,7 +191,7 @@
           </div>
         </div>
 
-        <!-- Real Turn-by-Turn Directions -->
+        <!-- Turn-by-Turn Directions -->
         <div class="panel-card">
           <div class="panel-header">
             <h3>🧭 Turn-by-Turn Street Navigation</h3>
@@ -182,13 +206,13 @@
       <main class="map-container">
         <!-- Floating Helper Tips -->
         <div class="map-floating-tip" id="mapModeNotice">
-          💡 Click <strong>"🚧 Click Map to Block Road"</strong> on the left, then click on the green route to see the algorithm find a new detour!
+          💡 Click <strong>"🚧 Click Map to Block Road"</strong> on the left, then click along the green route to see the algorithm find a new detour!
         </div>
 
         <!-- Floating Legend -->
         <div class="map-floating-legend">
           <div class="legend-badge"><span class="icon-dot hospital"></span> Hospital</div>
-          <div class="legend-badge"><span class="icon-dot school"></span> School</div>
+          <div class="legend-badge"><span class="icon-dot school"></span> School / University</div>
           <div class="legend-badge"><span class="icon-dot fire"></span> Fire Station</div>
           <div class="legend-badge"><span class="icon-dot shelter"></span> Safe Shelter</div>
           <div class="legend-badge"><span class="icon-dot blocked"></span> Blocked Road / Hazard</div>

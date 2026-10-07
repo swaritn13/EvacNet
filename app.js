@@ -1,51 +1,137 @@
 /**
- * EvacNet — Original Map Edition
+ * EvacNet — Global Edition
+ * Dynamic Emergency Evacuation Route Planning Anywhere in the World
  * Real-World OpenStreetMap Routing, Dynamic Roadblock Detours, and Glowing LED Guidance
  */
 
-// --- Pre-configured City Landmarks on Real Streets (Metropolitan Sector) ---
-const INITIAL_LANDMARKS = [
-  { id: 0, name: "City Hall Plaza", type: "commercial", lat: 40.7128, lng: -74.0060, icon: "🏛️" },
-  { id: 1, name: "Lincoln High School", type: "school", lat: 40.7230, lng: -74.0080, icon: "🏫" },
-  { id: 2, name: "West Elementary Academy", type: "school", lat: 40.7290, lng: -74.0160, icon: "🎒" },
-  { id: 3, name: "Metro General Hospital & Trauma", type: "hospital", lat: 40.7340, lng: -73.9920, icon: "🏥" },
-  { id: 4, name: "Central Fire & Rescue Station 14", type: "fire", lat: 40.7190, lng: -73.9980, icon: "🚒" },
-  { id: 5, name: "East District Firehouse", type: "fire", lat: 40.7150, lng: -73.9850, icon: "🚒" },
-  { id: 6, name: "North Shore Safe Haven [Shelter 1]", type: "shelter", lat: 40.7420, lng: -74.0020, icon: "🛡️" },
-  { id: 7, name: "Riverfront Park Relief Center [Shelter 2]", type: "shelter", lat: 40.7280, lng: -73.9740, icon: "🛡️" },
-  { id: 8, name: "South Harbor Evacuation Dock [Shelter 3]", type: "shelter", lat: 40.7020, lng: -74.0130, icon: "🛡️" }
-];
+// --- Global City Presets ---
+const CITY_PRESETS = {
+  pune: {
+    name: "Pune, Maharashtra 🇮🇳",
+    lat: 18.5204,
+    lng: 73.8567,
+    zoom: 14,
+    landmarks: [
+      { name: "Shivajinagar High School", type: "school", icon: "🏫", dLat: 0.010, dLng: -0.005 },
+      { name: "COEP Tech University", type: "school", icon: "🎒", dLat: 0.008, dLng: 0.008 },
+      { name: "Sassoon General Hospital & Trauma", type: "hospital", icon: "🏥", dLat: 0.003, dLng: 0.015 },
+      { name: "Central Fire Brigade Headquarters", type: "fire", icon: "🚒", dLat: -0.008, dLng: 0.002 },
+      { name: "East Pune Relief Firehouse", type: "fire", icon: "🚒", dLat: 0.012, dLng: 0.022 },
+      { name: "Mutha Riverfront Safe Shelter [North]", type: "shelter", icon: "🛡️", dLat: 0.022, dLng: -0.008 },
+      { name: "Nehru Stadium Relief Center [South]", type: "shelter", icon: "🛡️", dLat: -0.018, dLng: 0.005 },
+      { name: "Koregaon Park Safe Haven [East]", type: "shelter", icon: "🛡️", dLat: 0.015, dLng: 0.035 }
+    ]
+  },
+  mumbai: {
+    name: "Mumbai, Maharashtra 🇮🇳",
+    lat: 18.9388,
+    lng: 72.8354,
+    zoom: 14,
+    landmarks: [
+      { name: "St. Xavier's High School", type: "school", icon: "🏫", dLat: 0.005, dLng: -0.003 },
+      { name: "KEM Hospital & Trauma Center", type: "hospital", icon: "🏥", dLat: 0.015, dLng: 0.008 },
+      { name: "Fort Fire & Rescue Station", type: "fire", icon: "🚒", dLat: -0.005, dLng: 0.002 },
+      { name: "Marine Drive Coastal Safe Haven [Shelter 1]", type: "shelter", icon: "🛡️", dLat: -0.012, dLng: -0.010 },
+      { name: "Oval Maidan Emergency Shelter [Shelter 2]", type: "shelter", icon: "🛡️", dLat: 0.018, dLng: -0.004 }
+    ]
+  },
+  delhi: {
+    name: "New Delhi 🇮🇳",
+    lat: 28.6139,
+    lng: 77.2090,
+    zoom: 14,
+    landmarks: [
+      { name: "Central Delhi Senior School", type: "school", icon: "🏫", dLat: 0.008, dLng: -0.006 },
+      { name: "AIIMS Apex Trauma Center", type: "hospital", icon: "🏥", dLat: -0.025, dLng: 0.002 },
+      { name: "Connaught Place Fire Unit", type: "fire", icon: "🚒", dLat: 0.018, dLng: 0.005 },
+      { name: "India Gate Relief Safe Zone [Shelter 1]", type: "shelter", icon: "🛡️", dLat: 0.002, dLng: 0.015 },
+      { name: "Lodhi Garden Emergency Shelter [Shelter 2]", type: "shelter", icon: "🛡️", dLat: -0.016, dLng: 0.008 }
+    ]
+  },
+  bengaluru: {
+    name: "Bengaluru, Karnataka 🇮🇳",
+    lat: 12.9716,
+    lng: 77.5946,
+    zoom: 14,
+    landmarks: [
+      { name: "Bishop Cotton High School", type: "school", icon: "🏫", dLat: -0.005, dLng: 0.008 },
+      { name: "Victoria Hospital & Emergency Care", type: "hospital", icon: "🏥", dLat: -0.012, dLng: -0.015 },
+      { name: "Cubbon Park Relief Shelter [Shelter 1]", type: "shelter", icon: "🛡️", dLat: 0.010, dLng: 0.005 },
+      { name: "Kanteerava Stadium Safe Zone [Shelter 2]", type: "shelter", icon: "🛡️", dLat: -0.004, dLng: -0.006 }
+    ]
+  },
+  london: {
+    name: "London, UK 🇬🇧",
+    lat: 51.5074,
+    lng: -0.1278,
+    zoom: 14,
+    landmarks: [
+      { name: "Westminster Academy", type: "school", icon: "🏫", dLat: -0.006, dLng: -0.008 },
+      { name: "St Thomas' Hospital Trauma Center", type: "hospital", icon: "🏥", dLat: -0.008, dLng: 0.008 },
+      { name: "Hyde Park Emergency Shelter [Shelter 1]", type: "shelter", icon: "🛡️", dLat: 0.005, dLng: -0.035 },
+      { name: "Southbank Relief Center [Shelter 2]", type: "shelter", icon: "🛡️", dLat: -0.002, dLng: 0.015 }
+    ]
+  },
+  tokyo: {
+    name: "Tokyo, Japan 🇯🇵",
+    lat: 35.6762,
+    lng: 139.6503,
+    zoom: 14,
+    landmarks: [
+      { name: "Shinjuku High School", type: "school", icon: "🏫", dLat: 0.010, dLng: 0.020 },
+      { name: "Tokyo Medical University Hospital", type: "hospital", icon: "🏥", dLat: 0.018, dLng: 0.015 },
+      { name: "Yoyogi Park Disaster Safe Zone [Shelter 1]", type: "shelter", icon: "🛡️", dLat: -0.008, dLng: 0.025 }
+    ]
+  },
+  nyc: {
+    name: "New York City, USA 🇺🇸",
+    lat: 40.7240,
+    lng: -73.9980,
+    zoom: 14,
+    landmarks: [
+      { name: "Lincoln High School", type: "school", icon: "🏫", dLat: -0.001, dLng: -0.010 },
+      { name: "Metro General Hospital", type: "hospital", icon: "🏥", dLat: 0.010, dLng: 0.006 },
+      { name: "Central Fire Station 14", type: "fire", icon: "🚒", dLat: -0.005, dLng: 0.000 },
+      { name: "North Shore Safe Haven [Shelter 1]", type: "shelter", icon: "🛡️", dLat: 0.018, dLng: -0.004 },
+      { name: "Riverfront Park Relief Center [Shelter 2]", type: "shelter", icon: "🛡️", dLat: 0.004, dLng: 0.024 }
+    ]
+  }
+};
 
 // --- Application State ---
 let map;
-let landmarks = [...INITIAL_LANDMARKS];
+let currentCityKey = "pune"; // Default city is Pune, India!
+let landmarks = [];
 let landmarkMarkers = {};
-let startLocation = { lat: 40.7230, lng: -74.0080, name: "Lincoln High School" };
-let targetLocation = { lat: 40.7420, lng: -74.0020, name: "North Shore Safe Haven" };
+
+let startLocation = null;
+let targetLocation = null;
 let targetMode = "nearest_shelter";
 
 let activeRoutePolyline = null;
-let blockedRoutePolyline = null;
 let ledMarkers = [];
 let roadBlocks = []; // Array of { id, lat, lng, radius, hazardType, marker, circle }
 
 let currentHazardType = "fire";
-let clickMode = "navigate"; // 'navigate' or 'block'
+let clickMode = "navigate"; // 'navigate', 'block', 'pick_start', 'pick_dest'
 let showLedAnimation = true;
 let ledSpeedMultiplier = 3;
 let ledColorClass = "";
 let animIntervalId = null;
 
+// Custom clicked markers
+let customStartMarker = null;
+let customTargetMarker = null;
+
 // --- DOM Ready Entry Point ---
 document.addEventListener("DOMContentLoaded", () => {
   initOriginalMap();
   initUI();
-  computeRealStreetRoute();
+  loadCityPreset("pune"); // Default to Pune!
 });
 
 // --- Initialize Original OpenStreetMap ---
 function initOriginalMap() {
-  // 1. Base Map Layers
   const osmStandard = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -62,11 +148,11 @@ function initOriginalMap() {
     attribution: '&copy; CartoDB'
   });
 
-  // 2. Initialize Leaflet Map with Original OpenStreetMap as Default
+  // Default to Pune, Maharashtra
   map = L.map("map", {
-    center: [40.7240, -73.9980],
+    center: [18.5204, 73.8567],
     zoom: 14,
-    layers: [osmStandard] // Default layer is Original OpenStreetMap!
+    layers: [osmStandard] // Original OpenStreetMap default!
   });
 
   // Layer control switcher
@@ -77,19 +163,99 @@ function initOriginalMap() {
   };
   L.control.layers(baseMaps, null, { position: "topright" }).addTo(map);
 
-  // Map Click Listener for Placing Roadblocks or Custom Waypoints
+  // Map Click Listener
   map.on("click", onMapClick);
+}
 
-  // Render Landmarks
+// --- Load City Preset or Custom Location ---
+function loadCityPreset(cityKey) {
+  const preset = CITY_PRESETS[cityKey];
+  if (!preset) return;
+
+  currentCityKey = cityKey;
+  map.flyTo([preset.lat, preset.lng], preset.zoom, { duration: 1.2 });
+
+  // Generate landmarks for this city
+  generateCityLandmarks(preset.lat, preset.lng, preset.name, preset.landmarks);
+
+  clearAllRoadBlocks();
+  showToast("City Selected", `Loaded ${preset.name}. Local shelters and hospitals ready!`);
+}
+
+// --- Generate City Landmarks ---
+function generateCityLandmarks(baseLat, baseLng, cityName, presetLandmarks) {
+  // Clear old markers
+  Object.values(landmarkMarkers).forEach(m => map.removeLayer(m));
+  landmarkMarkers = {};
+
+  landmarks = [];
+
+  if (presetLandmarks && presetLandmarks.length > 0) {
+    presetLandmarks.forEach((item, idx) => {
+      landmarks.push({
+        id: idx,
+        name: item.name,
+        type: item.type,
+        icon: item.icon,
+        lat: baseLat + item.dLat,
+        lng: baseLng + item.dLng
+      });
+    });
+  } else {
+    // Generate generic local landmarks around any searched location
+    landmarks = [
+      { id: 0, name: `${cityName} High School`, type: "school", icon: "🏫", lat: baseLat - 0.005, lng: baseLng - 0.006 },
+      { id: 1, name: `${cityName} Civil Hospital`, type: "hospital", icon: "🏥", lat: baseLat + 0.008, lng: baseLng + 0.006 },
+      { id: 2, name: `${cityName} Central Fire Brigade`, type: "fire", icon: "🚒", lat: baseLat - 0.004, lng: baseLng + 0.008 },
+      { id: 3, name: `${cityName} North Safe Haven [Shelter 1]`, type: "shelter", icon: "🛡️", lat: baseLat + 0.016, lng: baseLng - 0.004 },
+      { id: 4, name: `${cityName} South Stadium Safe Zone [Shelter 2]`, type: "shelter", icon: "🛡️", lat: baseLat - 0.015, lng: baseLng + 0.005 }
+    ];
+  }
+
+  // Set default start location (First school) and destination (First shelter)
+  const defaultSchool = landmarks.find(l => l.type === "school") || landmarks[0];
+  const defaultShelter = landmarks.find(l => l.type === "shelter") || landmarks[landmarks.length - 1];
+
+  startLocation = { lat: defaultSchool.lat, lng: defaultSchool.lng, name: defaultSchool.name };
+  targetLocation = { lat: defaultShelter.lat, lng: defaultShelter.lng, name: defaultShelter.name };
+
   renderLandmarkMarkers();
+  populateDropdowns();
+  computeRealStreetRoute();
+}
+
+// --- Populate Dropdown Selectors ---
+function populateDropdowns() {
+  const startSelect = document.getElementById("startNodeSelect");
+  const targetSelect = document.getElementById("targetNodeSelect");
+
+  startSelect.innerHTML = "";
+  targetSelect.innerHTML = "";
+
+  landmarks.forEach(n => {
+    const opt1 = document.createElement("option");
+    opt1.value = n.id;
+    opt1.textContent = `${n.icon} ${n.name}`;
+    if (n.name === startLocation.name) opt1.selected = true;
+    startSelect.appendChild(opt1);
+
+    const opt2 = document.createElement("option");
+    opt2.value = n.id;
+    opt2.textContent = `${n.icon} ${n.name}`;
+    if (n.name === targetLocation.name) opt2.selected = true;
+    targetSelect.appendChild(opt2);
+  });
+
+  updateLocationSublabels();
+}
+
+function updateLocationSublabels() {
+  document.getElementById("startLocationLabel").textContent = `Origin: ${startLocation ? startLocation.name : 'Not set'}`;
+  document.getElementById("targetLocationLabel").textContent = `Target: ${targetLocation ? targetLocation.name : 'Nearest Safe Shelter'}`;
 }
 
 // --- Render Landmark Markers ---
 function renderLandmarkMarkers() {
-  // Clear existing
-  Object.values(landmarkMarkers).forEach(m => map.removeLayer(m));
-  landmarkMarkers = {};
-
   landmarks.forEach(node => {
     const isShelter = node.type === "shelter";
     const isHospital = node.type === "hospital";
@@ -115,7 +281,7 @@ function renderLandmarkMarkers() {
         <h4 style="margin-bottom:4px;">${node.icon} ${node.name}</h4>
         <span style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">${node.type}</span>
         <button class="popup-btn" onclick="setOriginFromLandmark(${node.id})">🚩 Set as Evacuation Start</button>
-        ${!isShelter ? `<button class="popup-btn" onclick="setDestinationFromLandmark(${node.id})">🎯 Set as Target</button>` : ''}
+        <button class="popup-btn" onclick="setDestinationFromLandmark(${node.id})">🎯 Set as Evacuation Target</button>
       </div>
     `;
     marker.bindPopup(popupHtml);
@@ -128,6 +294,7 @@ window.setOriginFromLandmark = function(id) {
   if (!lm) return;
   startLocation = { lat: lm.lat, lng: lm.lng, name: lm.name };
   document.getElementById("startNodeSelect").value = id;
+  updateLocationSublabels();
   computeRealStreetRoute();
   map.closePopup();
 };
@@ -140,6 +307,7 @@ window.setDestinationFromLandmark = function(id) {
   document.getElementById("targetModeSelect").value = "custom_target";
   document.getElementById("customTargetWrapper").style.display = "block";
   document.getElementById("targetNodeSelect").value = id;
+  updateLocationSublabels();
   computeRealStreetRoute();
   map.closePopup();
 };
@@ -149,17 +317,48 @@ function onMapClick(e) {
   const { lat, lng } = e.latlng;
 
   if (clickMode === "block") {
-    // Place a Roadblock / Hazard on the clicked location
+    // Add Roadblock on clicked street
     addRoadBlock(lat, lng, currentHazardType);
   } else if (clickMode === "pick_start") {
-    startLocation = { lat, lng, name: `Custom Point (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
+    // Place custom start point
+    startLocation = { lat, lng, name: `Custom Origin (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
+
+    if (customStartMarker) map.removeLayer(customStartMarker);
+    const startIcon = L.divIcon({
+      className: "custom-city-marker marker-origin",
+      html: `<div class="marker-inner">🚩</div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+    customStartMarker = L.marker([lat, lng], { icon: startIcon }).addTo(map).bindPopup("<b>🚩 Custom Start Point</b>").openPopup();
+
     setClickMode("navigate");
-    showToast("Origin Set", `Evacuation start point placed on map.`);
+    updateLocationSublabels();
+    showToast("Origin Set", `Start point placed on map.`);
+    computeRealStreetRoute();
+  } else if (clickMode === "pick_dest") {
+    // Place custom destination point
+    targetLocation = { lat, lng, name: `Custom Safe Zone (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
+    targetMode = "map_click";
+    document.getElementById("targetModeSelect").value = "map_click";
+
+    if (customTargetMarker) map.removeLayer(customTargetMarker);
+    const destIcon = L.divIcon({
+      className: "custom-city-marker marker-shelter",
+      html: `<div class="marker-inner">🏁</div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+    customTargetMarker = L.marker([lat, lng], { icon: destIcon }).addTo(map).bindPopup("<b>🏁 Custom Evacuation Destination</b>").openPopup();
+
+    setClickMode("navigate");
+    updateLocationSublabels();
+    showToast("Destination Set", `Custom destination placed on map!`);
     computeRealStreetRoute();
   }
 }
 
-// --- Add Roadblock Hazard with Detour Detection ---
+// --- Add Roadblock Hazard ---
 function addRoadBlock(lat, lng, hazardType) {
   const id = Date.now();
   const radius = 120; // 120 meters blockage zone
@@ -185,7 +384,7 @@ function addRoadBlock(lat, lng, hazardType) {
     dashArray: "6, 6"
   }).addTo(map);
 
-  marker.bindTooltip(`Blocked: ${hazardType.toUpperCase()} (Click to clear)`);
+  marker.bindTooltip(`Blocked: ${hazardType.toUpperCase()} (Click to remove)`);
   marker.on("click", (e) => {
     L.DomEvent.stopPropagation(e);
     removeRoadBlock(id);
@@ -220,7 +419,6 @@ function clearAllRoadBlocks() {
   roadBlocks = [];
   updateRoadblockListUI();
   computeRealStreetRoute();
-  showToast("All Clear", "All roadblocks cleared from city grid.");
 }
 
 function updateRoadblockListUI() {
@@ -250,33 +448,40 @@ function updateRoadblockListUI() {
 }
 window.removeRoadBlock = removeRoadBlock;
 
-// --- Real-World Street Routing via OSRM Engine ---
+// --- Real-World Street Routing via OSRM ---
 async function computeRealStreetRoute() {
-  // 1. Determine target coordinates
+  if (!startLocation) return;
+
+  // 1. Determine destination coordinates
   let destination = targetLocation;
 
   if (targetMode === "nearest_shelter") {
-    // Evaluate all shelters and choose the closest one by straight line first
     const shelters = landmarks.filter(l => l.type === "shelter");
-    let bestShelter = shelters[0];
-    let minD = Infinity;
+    if (shelters.length > 0) {
+      let bestShelter = shelters[0];
+      let minD = Infinity;
 
-    shelters.forEach(s => {
-      const d = Math.hypot(s.lat - startLocation.lat, s.lng - startLocation.lng);
-      if (d < minD) {
-        minD = d;
-        bestShelter = s;
-      }
-    });
-    destination = { lat: bestShelter.lat, lng: bestShelter.lng, name: bestShelter.name };
+      shelters.forEach(s => {
+        const d = Math.hypot(s.lat - startLocation.lat, s.lng - startLocation.lng);
+        if (d < minD) {
+          minD = d;
+          bestShelter = s;
+        }
+      });
+      destination = { lat: bestShelter.lat, lng: bestShelter.lng, name: bestShelter.name };
+      targetLocation = destination;
+    }
   } else if (targetMode === "nearest_hospital") {
     const hospitals = landmarks.filter(l => l.type === "hospital");
     if (hospitals.length > 0) {
       destination = { lat: hospitals[0].lat, lng: hospitals[0].lng, name: hospitals[0].name };
+      targetLocation = destination;
     }
   }
 
-  // 2. Query Open Source Routing Machine (OSRM) on Real OpenStreetMap roads
+  updateLocationSublabels();
+
+  // 2. Query OSRM on Real OpenStreetMap roads
   try {
     const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startLocation.lng},${startLocation.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true&alternatives=true`;
     
@@ -289,60 +494,52 @@ async function computeRealStreetRoute() {
     }
 
     // 3. Dynamic Obstacle Avoidance Filter
-    // Find the best route among candidates that does not intersect any active roadBlocks
     let chosenRoute = null;
     let fallbackRoute = data.routes[0];
 
     for (const r of data.routes) {
       const coords = r.geometry.coordinates; // [lng, lat]
-      const intersectsHazard = checkIfRouteIntersectsHazards(coords);
-      if (!intersectsHazard) {
+      if (!checkIfRouteIntersectsHazards(coords)) {
         chosenRoute = r;
         break;
       }
     }
 
-    // 4. If all standard OSRM routes are blocked, compute an evasion waypoint detour!
+    // 4. If all routes are blocked, compute an evasion detour
     if (!chosenRoute && roadBlocks.length > 0) {
       chosenRoute = await computeDetourAroundHazards(startLocation, destination, fallbackRoute);
     } else if (!chosenRoute) {
       chosenRoute = fallbackRoute;
     }
 
-    // 5. Render the calculated route and glowing LED trail
+    // 5. Render route and LEDs
     if (chosenRoute) {
       renderRouteOnMap(chosenRoute, destination.name);
     } else {
       handleNoRouteFound();
     }
   } catch (err) {
-    console.warn("OSRM online fetch error, falling back to local routing:", err);
-    renderFallbackDirectRoute(startLocation, destination);
+    console.warn("OSRM routing error:", err);
   }
 }
 
-// --- Check if Route intersects with any active Roadblock circles ---
 function checkIfRouteIntersectsHazards(coords) {
   for (const rb of roadBlocks) {
     for (const pt of coords) {
       const lat = pt[1];
       const lng = pt[0];
-      const distMeters = getDistanceMeters(lat, lng, rb.lat, rb.lng);
-      if (distMeters < rb.radius) {
-        return true; // Intersects!
+      if (getDistanceMeters(lat, lng, rb.lat, rb.lng) < rb.radius) {
+        return true;
       }
     }
   }
   return false;
 }
 
-// --- Compute Detour Waypoint around Hazards ---
 async function computeDetourAroundHazards(start, dest, blockedRoute) {
-  // Find which roadblock was hit
   const firstBlock = roadBlocks[0];
   if (!firstBlock) return null;
 
-  // Compute an evasion waypoint perpendicular to the block
   const offsetLat = 0.007; // ~700 meters lateral detour
   const offsetLng = 0.007;
 
@@ -361,29 +558,22 @@ async function computeDetourAroundHazards(start, dest, blockedRoute) {
       if (dData.routes && dData.routes.length > 0) {
         const candidateRoute = dData.routes[0];
         if (!checkIfRouteIntersectsHazards(candidateRoute.geometry.coordinates)) {
-          showToast("DYNAMIC DETOUR FOUND", "⚡ Successfully rerouted through clear streets around roadblock!");
+          showToast("DYNAMIC DETOUR ENGAGED", "⚡ Successfully found clear streets bypassing roadblock!");
           return candidateRoute;
         }
       }
-    } catch (e) {
-      // Continue to next candidate
-    }
+    } catch (e) {}
   }
   return null;
 }
 
-// --- Render Route and Animated LEDs on Map ---
+// --- Render Route and Animated LEDs ---
 function renderRouteOnMap(route, targetName) {
   const coords = route.geometry.coordinates.map(pt => [pt[1], pt[0]]); // [lat, lng]
 
-  // Remove previous polyline
   if (activeRoutePolyline) map.removeLayer(activeRoutePolyline);
-  if (blockedRoutePolyline) map.removeLayer(blockedRoutePolyline);
 
-  // If hazards are present, draw previous blocked path in subtle red
-  const hasObstacles = roadBlocks.length > 0;
-
-  // Draw Primary Optimal Route Polyline
+  // Draw Primary Green Evacuation Route
   activeRoutePolyline = L.polyline(coords, {
     color: "#00ff88",
     weight: 7,
@@ -394,32 +584,30 @@ function renderRouteOnMap(route, targetName) {
 
   activeRoutePolyline.bringToFront();
 
-  // Render Glowing LED Runway Dots along the real polyline
+  // Render Glowing LED Runway Dots
   renderGlowingLedsAlongPolyline(coords);
 
   // Update HUD Metrics
   const distanceMeters = Math.round(route.distance);
   const timeMinutes = (route.duration / 60).toFixed(1);
 
-  document.getElementById("headerRouteStatus").textContent = `Route Safe ➔ ${targetName}`;
+  document.getElementById("headerRouteStatus").textContent = `Route Safe ➔ ${targetName.split("[")[0].trim()}`;
   document.getElementById("headerRouteStatus").className = "stat-val status-safe";
   document.getElementById("headerDistance").textContent = `${distanceMeters} m`;
   document.getElementById("headerTime").textContent = `${timeMinutes} min`;
 
-  // Update Turn-by-Turn Directions
+  // Render Turn-by-Turn Directions
   renderTurnByTurnDirections(route, targetName);
 }
 
-// --- Render Animated Glowing LEDs along Polyline ---
+// --- Render Glowing LED Trail ---
 function renderGlowingLedsAlongPolyline(latlngs) {
-  // Clear old LED markers
   ledMarkers.forEach(m => map.removeLayer(m));
   ledMarkers = [];
 
   if (!showLedAnimation || latlngs.length < 2) return;
 
-  // Sample points evenly along the polyline path
-  const sampleStep = Math.max(1, Math.floor(latlngs.length / 28)); // ~28 glowing LEDs along route
+  const sampleStep = Math.max(1, Math.floor(latlngs.length / 28)); // ~28 LEDs along path
   for (let i = 0; i < latlngs.length; i += sampleStep) {
     const pt = latlngs[i];
     const ledIcon = L.divIcon({
@@ -463,12 +651,11 @@ function startLedPulseAnimation() {
   }, interval);
 }
 
-// --- Render Turn-by-Turn Directions ---
+// --- Turn-by-Turn Directions ---
 function renderTurnByTurnDirections(route, targetName) {
   const container = document.getElementById("turnByTurnList");
   container.innerHTML = "";
 
-  // Start step
   const startDiv = document.createElement("div");
   startDiv.className = "step-item";
   startDiv.style.borderLeftColor = "#ff0055";
@@ -478,7 +665,6 @@ function renderTurnByTurnDirections(route, targetName) {
   `;
   container.appendChild(startDiv);
 
-  // Steps from OSRM legs
   if (route.legs && route.legs[0] && route.legs[0].steps) {
     const steps = route.legs[0].steps;
     steps.forEach((s, idx) => {
@@ -487,20 +673,19 @@ function renderTurnByTurnDirections(route, targetName) {
         div.className = "step-item";
         div.innerHTML = `
           <span class="step-road">Step ${idx + 1}: ${s.maneuver.type} onto ${s.name}</span>
-          <span class="step-meta">${Math.round(s.distance)} meters &bull; (${Math.round(s.duration)}s)</span>
+          <span class="step-meta">${Math.round(s.distance)}m &bull; (${Math.round(s.duration)}s)</span>
         `;
         container.appendChild(div);
       }
     });
   }
 
-  // Arrival step
   const destDiv = document.createElement("div");
   destDiv.className = "step-item";
   destDiv.style.borderLeftColor = "#00f2fe";
   destDiv.innerHTML = `
     <span class="step-road">🏁 Safe Arrival: ${targetName}</span>
-    <span class="step-meta">Shelter perimeter reached. Emergency relief ready.</span>
+    <span class="step-meta">Safe Haven reached! Emergency relief teams active.</span>
   `;
   container.appendChild(destDiv);
 }
@@ -517,14 +702,15 @@ function handleNoRouteFound() {
 
   document.getElementById("turnByTurnList").innerHTML = `
     <div class="empty-state" style="color:#ff6b81;">
-      ⚠️ All known street routes are blocked by active hazards! Clear a blockage or pick a different shelter.
+      ⚠️ All street routes are blocked by roadblocks! Clear a hazard or choose another shelter.
     </div>
   `;
-  showToast("NO PATH FOUND", "⚠️ Evacuation origin is trapped by surrounding roadblocks!", 5000);
+  showToast("NO PATH FOUND", "⚠️ Evacuation origin is trapped by roadblocks!", 5000);
 }
 
-// --- UI Binding & Helpers ---
+// --- UI Binding & Event Listeners ---
 function initUI() {
+  const citySelect = document.getElementById("cityPresetSelect");
   const startSelect = document.getElementById("startNodeSelect");
   const targetSelect = document.getElementById("targetNodeSelect");
   const targetModeSelect = document.getElementById("targetModeSelect");
@@ -533,56 +719,67 @@ function initUI() {
   const btnDisaster = document.getElementById("btnDisasterScenario");
   const btnClear = document.getElementById("btnClearBlockades");
   const btnPickStart = document.getElementById("btnPickStartOnMap");
+  const btnPickDest = document.getElementById("btnPickDestOnMap");
   const searchInput = document.getElementById("citySearchInput");
   const btnSearch = document.getElementById("btnSearchCity");
 
-  // Populate Dropdowns
-  landmarks.forEach(n => {
-    const opt1 = document.createElement("option");
-    opt1.value = n.id;
-    opt1.textContent = `${n.icon} ${n.name}`;
-    if (n.name === startLocation.name) opt1.selected = true;
-    startSelect.appendChild(opt1);
-
-    const opt2 = document.createElement("option");
-    opt2.value = n.id;
-    opt2.textContent = `${n.icon} ${n.name}`;
-    if (n.name === targetLocation.name) opt2.selected = true;
-    targetSelect.appendChild(opt2);
+  // City Preset Selector
+  citySelect.addEventListener("change", (e) => {
+    const val = e.target.value;
+    if (val === "locate_me") {
+      detectUserLocation();
+    } else {
+      loadCityPreset(val);
+    }
   });
 
+  // Origin change
   startSelect.addEventListener("change", (e) => {
     const lm = landmarks.find(l => l.id === parseInt(e.target.value));
     if (lm) {
       startLocation = { lat: lm.lat, lng: lm.lng, name: lm.name };
+      updateLocationSublabels();
       computeRealStreetRoute();
     }
   });
 
+  // Target Mode change
   targetModeSelect.addEventListener("change", (e) => {
     targetMode = e.target.value;
     customTargetWrapper.style.display = targetMode === "custom_target" ? "block" : "none";
+    updateLocationSublabels();
     computeRealStreetRoute();
   });
 
+  // Specific target change
   targetSelect.addEventListener("change", (e) => {
     const lm = landmarks.find(l => l.id === parseInt(e.target.value));
     if (lm) {
       targetLocation = { lat: lm.lat, lng: lm.lng, name: lm.name };
+      updateLocationSublabels();
       computeRealStreetRoute();
     }
   });
 
   btnRecalc.addEventListener("click", computeRealStreetRoute);
-  btnClear.addEventListener("click", clearAllRoadBlocks);
+  btnClear.addEventListener("click", () => {
+    clearAllRoadBlocks();
+    showToast("All Clear", "Roadblocks removed. Routes restored.");
+  });
   btnDisaster.addEventListener("click", triggerDisasterScenario);
 
+  // Pick on Map buttons
   btnPickStart.addEventListener("click", () => {
     setClickMode("pick_start");
-    showToast("Pick Start Point", "Click anywhere on the map to set the evacuation origin.");
+    showToast("Pick Start Point", "Click anywhere on the map to place your evacuation origin.");
   });
 
-  // Click Mode Toggles
+  btnPickDest.addEventListener("click", () => {
+    setClickMode("pick_dest");
+    showToast("Pick Destination", "Click anywhere on the map to place your custom destination safe zone.");
+  });
+
+  // Mode Toggles
   document.getElementById("modeNavigate").addEventListener("click", () => setClickMode("navigate"));
   document.getElementById("modeBlockRoad").addEventListener("click", () => setClickMode("block"));
 
@@ -639,7 +836,35 @@ function setClickMode(mode) {
   } else if (mode === "pick_start") {
     map.getContainer().style.cursor = "pointer";
     notice.innerHTML = `🎯 <strong>ORIGIN PICKER:</strong> Click anywhere on the map to place the start point!`;
+  } else if (mode === "pick_dest") {
+    map.getContainer().style.cursor = "pointer";
+    notice.innerHTML = `🏁 <strong>DESTINATION PICKER:</strong> Click anywhere on the map to set your custom safe zone!`;
   }
+}
+
+// --- GPS User Location Auto-Detect ---
+function detectUserLocation() {
+  if (!navigator.geolocation) {
+    showToast("Geolocation Error", "Browser does not support GPS location.");
+    return;
+  }
+
+  showToast("Locating You...", "Acquiring your GPS position...");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      map.flyTo([lat, lng], 14, { duration: 1.5 });
+
+      generateCityLandmarks(lat, lng, "Local Sector", null);
+      showToast("Location Detected", "Evacuation network created around your current location!");
+    },
+    (err) => {
+      showToast("Location Denied", "Unable to retrieve GPS. Switched to Pune, India.");
+      loadCityPreset("pune");
+    },
+    { timeout: 10000 }
+  );
 }
 
 // --- City Search via Nominatim OpenStreetMap ---
@@ -656,28 +881,14 @@ async function executeCitySearch() {
       const first = data[0];
       const lat = parseFloat(first.lat);
       const lng = parseFloat(first.lon);
+      const shortName = first.display_name.split(",")[0];
 
       map.flyTo([lat, lng], 14, { duration: 1.5 });
+      generateCityLandmarks(lat, lng, shortName, null);
 
-      // Relocate default start & destination to the searched city
-      startLocation = { lat: lat - 0.006, lng: lng - 0.006, name: `${query} Sector A` };
-      targetLocation = { lat: lat + 0.008, lng: lng + 0.008, name: `${query} Emergency Safe Shelter` };
-
-      // Add temporary shelter marker
-      const shelterIcon = L.divIcon({
-        className: "custom-city-marker marker-shelter",
-        html: `<div class="marker-inner">🛡️</div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
-      });
-      L.marker([targetLocation.lat, targetLocation.lng], { icon: shelterIcon }).addTo(map)
-        .bindPopup(`<b>🛡️ ${targetLocation.name}</b>`).openPopup();
-
-      showToast("Location Found", `Moved map to ${first.display_name.split(",")[0]}. Computing local evacuation route!`);
-      clearAllRoadBlocks();
-      computeRealStreetRoute();
+      showToast("City Found", `Loaded ${shortName}. Evacuation shelters and routes configured!`);
     } else {
-      showToast("Not Found", "Could not find location. Please check city name.");
+      showToast("Not Found", "Could not locate city. Please try another name.");
     }
   } catch (err) {
     showToast("Search Error", "Unable to connect to location search.");
@@ -688,14 +899,13 @@ async function executeCitySearch() {
 function triggerDisasterScenario() {
   clearAllRoadBlocks();
 
-  // Drop two roadblocks along the mid-path
   const midLat = (startLocation.lat + targetLocation.lat) / 2;
   const midLng = (startLocation.lng + targetLocation.lng) / 2;
 
   addRoadBlock(midLat, midLng, "fire");
-  addRoadBlock(midLat + 0.004, midLng - 0.003, "flood");
+  addRoadBlock(midLat + 0.003, midLng - 0.003, "flood");
 
-  showToast("MAJOR URBAN DISASTER", "🚨 Multiple flash hazards reported! Recalculating perimeter escape routes!");
+  showToast("MAJOR DISASTER TRIGGERED", "🚨 Multi-point urban hazard! Calculating emergency perimeter escape route!");
 }
 
 function showToast(title, message, duration = 3500) {
