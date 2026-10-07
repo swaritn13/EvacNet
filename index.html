@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EvacNet — Emergency Evacuation Route Planner</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-badge">🚨</div>
+        <div>
+          <h1>EvacNet <span class="badge-tag">MAP EDITION</span></h1>
+          <p class="subtitle">Real-Time Optimal Evacuation Routing & Dynamic Roadblock Rerouting</p>
+        </div>
+      </div>
+      <div class="header-metrics">
+        <div class="stat-pill">
+          <span class="stat-label">Route Status</span>
+          <span class="stat-val status-safe" id="headerRouteStatus">Active</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Evac Distance</span>
+          <span class="stat-val" id="headerDistance">-- m</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Est. Escape Time</span>
+          <span class="stat-val" id="headerTime">-- min</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Blocked Roads</span>
+          <span class="stat-val stat-alert" id="headerBlockedCount">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <!-- Left Sidebar Controls -->
+      <aside class="sidebar">
+        <!-- Route Dispatch -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>📍 Evacuation Dispatch</h3>
+          </div>
+          
+          <div class="field-group">
+            <label for="startNodeSelect">Evacuation Origin (Threat Zone):</label>
+            <select id="startNodeSelect" class="styled-select"></select>
+          </div>
+
+          <div class="field-group">
+            <label for="targetModeSelect">Destination Objective:</label>
+            <select id="targetModeSelect" class="styled-select">
+              <option value="nearest_shelter">🛡️ Nearest Emergency Safe Shelter</option>
+              <option value="nearest_hospital">🏥 Nearest Medical Emergency Hospital</option>
+              <option value="custom_target">🎯 Specific Destination Landmark</option>
+            </select>
+          </div>
+
+          <div class="field-group" id="customTargetWrapper" style="display: none;">
+            <label for="targetNodeSelect">Specific Landmark:</label>
+            <select id="targetNodeSelect" class="styled-select"></select>
+          </div>
+
+          <div class="field-group">
+            <label for="algorithmSelect">Routing Algorithm:</label>
+            <select id="algorithmSelect" class="styled-select">
+              <option value="dijkstra">Dijkstra's Shortest Path</option>
+              <option value="astar">A* Search (Euclidean Heuristic)</option>
+              <option value="safest">Safe-First Routing (Risk Weighted)</option>
+            </select>
+          </div>
+
+          <button id="btnRecalculate" class="action-btn btn-primary">
+            ⚡ Compute Optimal Route
+          </button>
+        </div>
+
+        <!-- Roadblock & Hazard Controls -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>🚧 Roadblock & Hazard Injection</h3>
+          </div>
+          <p class="panel-hint">
+            <strong>Click any road directly on the map</strong> to block/unblock it, or trigger a disaster scenario below:
+          </p>
+          
+          <div class="hazard-palette">
+            <label class="hazard-type-chip active" data-hazard="fire">
+              <input type="radio" name="hazardType" value="fire" checked> 🔥 Fire
+            </label>
+            <label class="hazard-type-chip" data-hazard="flood">
+              <input type="radio" name="hazardType" value="flood"> 🌊 Flood
+            </label>
+            <label class="hazard-type-chip" data-hazard="debris">
+              <input type="radio" name="hazardType" value="debris"> 🪨 Debris
+            </label>
+            <label class="hazard-type-chip" data-hazard="police">
+              <input type="radio" name="hazardType" value="police"> ⛔ Police
+            </label>
+          </div>
+
+          <div class="scenario-buttons">
+            <button id="btnDisasterScenario" class="action-btn btn-danger">
+              💥 Trigger Urban Disaster
+            </button>
+            <button id="btnClearBlockades" class="action-btn btn-outline">
+              🔄 Clear All Blockades
+            </button>
+          </div>
+
+          <!-- Active Blocked Roads List -->
+          <div class="blocked-roads-container">
+            <span class="subheading">Currently Blocked Roads:</span>
+            <div id="blockedRoadsList" class="blocked-list">
+              <div class="empty-state">No roads blocked. All routes open.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LED Path Guidance Settings -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>💡 Dynamic LED Guidance Trail</h3>
+          </div>
+          <div class="toggle-row">
+            <span>Animated Glowing LEDs:</span>
+            <label class="switch">
+              <input type="checkbox" id="toggleLedAnimation" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span>Show Road Names & Distances:</span>
+            <label class="switch">
+              <input type="checkbox" id="toggleRoadLabels" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="field-group" style="margin-top: 10px;">
+            <label>LED Pulse Flow Speed:</label>
+            <input type="range" id="ledSpeedRange" min="1" max="5" value="3" class="slider-range">
+          </div>
+        </div>
+
+        <!-- Turn-by-Turn Navigation -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>🧭 Step-by-Step Evacuation Plan</h3>
+          </div>
+          <div id="turnByTurnList" class="directions-list">
+            <div class="empty-state">Route instructions will appear here.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Map Viewport -->
+      <main class="map-container">
+        <!-- Floating Map Legend -->
+        <div class="map-floating-legend">
+          <div class="legend-badge"><span class="icon-dot hospital"></span> Hospital</div>
+          <div class="legend-badge"><span class="icon-dot school"></span> School</div>
+          <div class="legend-badge"><span class="icon-dot fire"></span> Fire Station</div>
+          <div class="legend-badge"><span class="icon-dot shelter"></span> Safe Shelter</div>
+          <div class="legend-badge"><span class="icon-dot residential"></span> Residential</div>
+          <div class="legend-badge"><span class="icon-dot blocked"></span> Blocked Road</div>
+          <div class="legend-badge"><span class="icon-dot route"></span> Glowing LED Route</div>
+        </div>
+
+        <!-- Interactive Map Element -->
+        <div id="map"></div>
+
+        <!-- Notification Banner -->
+        <div id="rerouteToast" class="reroute-toast hidden">
+          <div class="toast-icon">⚡</div>
+          <div class="toast-content">
+            <h4 id="toastTitle">Dynamic Reroute Triggered</h4>
+            <p id="toastMessage">Road #5 blocked by fire. New safe route calculated in 0.8ms!</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- EvacNet Map Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
