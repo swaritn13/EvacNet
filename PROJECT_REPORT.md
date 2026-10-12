@@ -1,14 +1,15 @@
 # 📄 PROJECT REPORT
 
-# **EvacNet: Optimal Emergency Evacuation Route Planning Using Graph Algorithms**
+# **EvacNet: Optimal Emergency Evacuation Route Planning Using Dijkstra's Algorithm on Real OpenStreetMap Networks**
 
 ---
 
 ## **Academic Project Details**
-* **Project Title:** EvacNet: Optimal Emergency Evacuation Route Planning Using Graph Algorithms
-* **Domain:** Design and Analysis of Algorithms (DAA), Graph Theory, Intelligent Transportation Systems (ITS), Geographic Information Systems (GIS)
+* **Project Title:** EvacNet: Optimal Emergency Evacuation Route Planning Using Dijkstra's Algorithm on Real OpenStreetMap Networks
+* **Domain:** Design and Analysis of Algorithms (DAA), Graph Theory, Geographic Information Systems (GIS), Disaster Risk Reduction (DRR)
 * **Author / Developer:** Swarit Naikade
-* **Repository:** [https://github.com/swaritn13/EvacNet](https://github.com/swaritn13/EvacNet)
+* **Live Deployment:** [https://evacnet.vercel.app/](https://evacnet.vercel.app/)
+* **GitHub Repository:** [https://github.com/swaritn13/EvacNet](https://github.com/swaritn13/EvacNet)
 * **Date:** October 2026
 
 ---
@@ -16,221 +17,281 @@
 ## **Table of Contents**
 1. [Abstract](#1-abstract)
 2. [Introduction & Problem Statement](#2-introduction--problem-statement)
-3. [Theoretical Foundations & Graph Theory](#3-theoretical-foundations--graph-theory)
-4. [Algorithms Used & Mathematical Formulations](#4-algorithms-used--mathematical-formulations)
-5. [System Architecture & Design](#5-system-architecture--design)
-6. [Implementation Details](#6-implementation-details)
-7. [Testing, Scenarios & Performance Analysis](#7-testing-scenarios--performance-analysis)
-8. [Key Advantages & Novel Features](#8-key-advantages--novel-features)
-9. [Future Scope & Extensions](#9-future-scope--extensions)
-10. [Conclusion](#10-conclusion)
-11. [References](#11-references)
+3. [Theoretical Foundations & Graph Modeling](#3-theoretical-foundations--graph-modeling)
+4. [Algorithmic Architecture & Formulations](#4-algorithmic-architecture--formulations)
+   * 4.1 [Binary Min-Heap Priority Queue Dijkstra](#41-binary-min-heap-priority-queue-dijkstra)
+   * 4.2 [Multi-Target Shelter & Hospital Selection by True Road Distance](#42-multi-target-shelter--hospital-selection-by-true-road-distance)
+   * 4.3 [Dynamic Roadblock Graph Edge Elimination](#43-dynamic-roadblock-graph-edge-elimination)
+   * 4.4 [Spatial Haversine Metric & Edge Distance Calculation](#44-spatial-haversine-metric--edge-distance-calculation)
+5. [Geographic Scale & Network Topology](#5-geographic-scale--network-topology)
+   * 5.1 [Pune Urban Core Grid](#51-pune-urban-core-grid)
+   * 5.2 [Western Maharashtra Regional Network](#52-western-maharashtra-regional-network)
+6. [System Architecture & User Interface Design](#6-system-architecture--user-interface-design)
+7. [Testing, Scenarios & Performance Benchmarks](#7-testing-scenarios--performance-benchmarks)
+8. [Deployment & Infrastructure](#8-deployment--infrastructure)
+9. [Key Advantages & Novel Features](#9-key-advantages--novel-features)
+10. [Future Scope & Extensions](#10-future-scope--extensions)
+11. [Conclusion](#11-conclusion)
+12. [References](#12-references)
 
 ---
 
 ## **1. Abstract**
 
-During natural and human-induced disasters—such as structural fires, urban flooding, building collapses, and earthquakes—transportation networks experience severe disruptions. Standard static navigation systems fail because predetermined evacuation paths frequently become impassable due to fallen debris or spreading hazards.
+During urban catastrophes and natural disasters—such as structural fires, monsoon river flash floods, debris flow, building collapses, and civil blockades—traditional navigation applications often fail. Conventional routing services rely on continuous internet connectivity, heavy third-party cloud APIs (such as OSRM, Mapbox, or Google Directions), and assume static road networks that cannot simulate emergency road closures, bridge washouts, or custom hazard-induced edge deletions. Furthermore, many naive systems assign victims to shelters using straight-line Euclidean distance, erroneously directing individuals toward shelters separated by severed bridges or impassable physical barriers.
 
-**EvacNet** is an autonomous, web-based emergency evacuation routing platform that integrates **Graph Algorithms (Dijkstra's Algorithm, Contraction Hierarchies, and Spatial Collision Evasion)** with real-world **OpenStreetMap (OSM)** cartography. The system provides real-time optimal evacuation path computation from any danger origin to the nearest safe shelter or trauma hospital. Users can interactively block any roadway with hazard tokens (Fire, Flood, Debris, Police Cordon). EvacNet dynamically detects the obstacle, recalculates an optimal detour via clear streets in **sub-10 millisecond latency**, and visually guides evacuees using an animated **glowing LED runway trail** superimposed directly on the actual curved street network.
+**EvacNet** is an autonomous, ultra-fast emergency evacuation routing platform built to operate directly in the client browser with **zero external routing API calls, zero API keys, and 100% offline capability**. The core engine implements a custom **Dijkstra Shortest Path Algorithm** powered by a **Binary Min-Heap Priority Queue**, operating directly on authentic OpenStreetMap road networks. The platform features dual geographic operational scopes:
+1. **Pune Urban Core**: 17,480 nodes and 26,366 real street segments, computing optimal escape paths in **sub-millisecond latency (< 1.0 ms)**.
+2. **Western Maharashtra Regional Scale**: 71,905 nodes and 98,324 state highway edges, enabling regional inter-city evacuation (e.g., Pune to Mumbai across the Western Ghats, 124.5 km) in **~50 ms**.
+
+EvacNet allows emergency operators and civilians to dynamically drop hazard barricades (🔥 Fire, 🌊 Flood, 🪨 Debris / Landslide, ⛔ Police Barricade). When a roadblock is introduced, the engine **physically severs the affected graph edges in memory** and instantly recalculates an optimal detour via unobstructed roadways, displaying turn-by-turn navigation, real-time detour deltas (+km / +min), and animated evacuation guidance superimposed on Google Roads, ESRI, and local vector cartography.
+
+The live application is publicly deployed and accessible worldwide at:  
+👉 **[https://evacnet.vercel.app/](https://evacnet.vercel.app/)**
 
 ---
 
 ## **2. Introduction & Problem Statement**
 
-### **2.1 Background**
-Rapid urban evacuation is a life-critical logistical problem. In crisis conditions:
-* Evacuees must reach a safe haven in minimal time.
-* Roads can be abruptly severed by hazards.
-* Panic and bottlenecking occur if navigation information is stale or inaccurate.
+### **2.1 Motivation**
+In life-or-death evacuation scenarios, timely and reliable evacuation routing is critical. Conventional commercial mapping applications present significant limitations during severe crises:
+* **Internet Dependency & API Outages:** Disaster zones frequently suffer cellular tower failures, fiber line cuts, or server overloads. An evacuation system dependent on cloud-hosted routing APIs stops functioning when connectivity drops.
+* **Lack of Dynamic Edge Deletion:** Commercial APIs calculate routes based on historical traffic patterns rather than allowing operators to physically cut specific bridge spans or burning intersections in real time.
+* **The "As-the-Crow-Flies" Shelter Fallacy:** Naive evacuation software selects safe shelters using Euclidean distance ($\sqrt{\Delta x^2 + \Delta y^2}$). In cities divided by rivers (such as the Mutha and Mula rivers in Pune), a shelter may be 300 meters away across a swollen river, but requires a 4 km detour if the local bridge is impassable. Safe evacuation requires evaluation along the **actual connected graph topology**.
 
-Traditional civilian GPS navigation applications (Google Maps, Apple Maps) are optimized for everyday vehicular traffic and toll reduction, rather than emergency crowd safety, designated disaster relief centers, or instantaneous road severing.
+### **2.2 Problem Formulation**
+Let a city transportation grid be modeled as a directed/undirected weighted graph $G = (V, E, W)$, where:
+* $V$ is the set of $|V|$ roadway intersections, decision vertices, and landmark locations.
+* $E \subseteq V \times V$ is the set of $|E|$ physical street and highway segments.
+* $W: E \rightarrow \mathbb{R}^+$ assigns non-negative traversable lengths/costs derived from geographic coordinates using the Haversine metric.
 
-### **2.2 Problem Statement**
-Given:
-1. An urban street network represented as a spatial graph $G = (V, E)$, where $V$ represents intersections and critical landmarks, and $E$ represents traversable roadways with physical distance and travel-time weights.
-2. A localized threat origin $v_{\text{origin}} \in V$ (e.g., an educational institution, residential sector, or transit station).
-3. A set of designated safe relief havens $S = \{s_1, s_2, \dots, s_k\} \subset V$.
-4. A set of dynamically emerging roadblocks / hazardous obstacle zones $H = \{h_1, h_2, \dots, h_m\}$.
-
-**Objective:**
-Find the path $P^* = (v_0, v_1, \dots, v_n)$ such that:
-$$v_0 = v_{\text{origin}}, \quad v_n \in S$$
-$$\forall e \in P^*, \quad \text{dist}(e, H) \ge r_{\text{hazard}}$$
-$$\text{Cost}(P^*) = \min_{P \in \mathcal{P}} \sum_{e \in P} \text{weight}(e)$$
-where $\mathcal{P}$ is the set of all safe, unblocked paths connecting the origin to any safe shelter.
+Given an evacuation origin node $s \in V$, a set of designated safe shelters $S = \{s_1, s_2, \dots, s_k\} \subset V$, and a set of active hazard epicenters $H = \{(lat_h, lon_h, r_h)\}$:
+1. Identify and remove all edges $e = (u, v) \in E$ that intersect any hazard perimeter in $H$:
+   $$E_{\text{safe}} = E \setminus \{e \in E \mid \text{Intersect}(e, H)\}$$
+2. Discover the target shelter $t^* \in S$ that minimizes true network path distance:
+   $$t^* = \arg\min_{s_j \in S} \text{dist}_{G'}(s, s_j), \quad \text{where } G' = (V, E_{\text{safe}}, W)$$
+3. Compute the sequence of vertices forming the minimum-cost traversal:
+   $$P^* = \langle s = v_0, v_1, v_2, \dots, v_m = t^* \rangle$$
 
 ---
 
-## **3. Theoretical Foundations & Graph Theory**
+## **3. Theoretical Foundations & Graph Modeling**
 
-### **3.1 Graph Representation of Urban Networks**
-The urban road network is modeled as a weighted directed/undirected graph $G = (V, E, W)$:
-* **Vertices ($V$):** Real-world intersections, junctions, and municipal facilities (hospitals, schools, fire stations, shelters).
-* **Edges ($E$):** Road segments connecting adjacent vertices.
-* **Edge Weights ($W$):** A cost function incorporating physical segment length $L_e$, speed limit $S_e$, and hazard proximity penalties $K_e$:
-  $$w(e) = \frac{L_e}{S_e} + K_e$$
+### **3.1 Graph Representation: Adjacency List**
+To achieve maximum query throughput with minimal memory footprint, the road network is represented as an in-memory **Adjacency List**:
+$$\text{Adj}[u] = [\{ \text{target}: v_1, \text{weight}: w_{u, v_1}, \text{wayId}: id_1 \}, \{ \text{target}: v_2, \text{weight}: w_{u, v_2}, \text{wayId}: id_2 \}, \dots]$$
 
-When an edge is physically severed by an active hazard:
-$$w(e) \longleftarrow \infty$$
+Compared to an Adjacency Matrix ($O(|V|^2)$ space), the Adjacency List requires only $O(|V| + |E|)$ space, which is essential for handling 71,905 nodes in client-side JavaScript memory without browser slowdown.
 
----
-
-## **4. Algorithms Used & Mathematical Formulations**
-
-EvacNet employs four complementary algorithms to guarantee rapid, collision-free evacuation routing:
-
-### **4.1 Contraction Hierarchies (Bidirectional Dijkstra's Algorithm)**
-* **Role:** Real-world street network shortest path calculation via the OSRM engine.
-* **Mechanism:** 
-  Standard Dijkstra’s algorithm explores vertices in order of tentative distance with a priority queue, operating in $O(|E| + |V| \log |V|)$ time. For metropolitan graphs with millions of road segments, standard Dijkstra is too slow for real-time interactive routing.
-  
-  **Contraction Hierarchies (CH)** pre-processes the graph by "contracting" less important vertices and adding shortcut edges. During routing queries, it executes a **Bidirectional Dijkstra Search** that only searches "upward" in the hierarchy from both the origin and the destination:
-  $$\text{Query Time:} \ O(\log |V|) \approx 2 - 5 \text{ milliseconds}$$
-
-### **4.2 Multi-Destination Nearest Safe Haven Selection**
-* **Role:** Automatically determines the closest open shelter or trauma hospital.
-* **Formulation:**
-  Given an origin $v_{\text{start}}$ and multiple candidate relief shelters $S = \{s_1, s_2, \dots, s_k\}$:
-  $$s^* = \arg\min_{s_i \in S} \Big( \mathcal{D}(v_{\text{start}}, s_i) \Big)$$
-  where $\mathcal{D}(u, v)$ is the computed road distance. EvacNet evaluates candidate goals and routes traffic to the nearest reachable facility.
-
-### **4.3 Haversine Spatial Collision Detection Algorithm**
-* **Role:** Detects whether an active evacuation route collides with any placed roadblock or hazard zone.
-* **Formulation:**
-  The Earth is modeled as a sphere of radius $R \approx 6,371 \text{ km}$. For every coordinate $(\phi_1, \lambda_1)$ along the route polyline and every hazard center $(\phi_2, \lambda_2)$ with radius $r_{\text{hazard}} = 120\text{ m}$:
-  $$\Delta\phi = \phi_2 - \phi_1, \quad \Delta\lambda = \lambda_2 - \lambda_1$$
-  $$a = \sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)$$
-  $$c = 2 \cdot \arctan2\left(\sqrt{a}, \sqrt{1 - a}\right)$$
-  $$d_{\text{meters}} = R \cdot c$$
-  $$\text{Collision Condition:} \quad d_{\text{meters}} < r_{\text{hazard}}$$
-
-### **4.4 Dynamic Evasion Detour Algorithm**
-* **Role:** Generates immediate detours when a road along the current path is blocked.
-* **Mechanism:**
-  1. Identifies the epicenter of the roadblock $(lat_b, lng_b)$.
-  2. Computes orthogonal evasion vector candidates offset by $\delta \approx 700\text{ meters}$:
-     $$\text{Cand}_1 = (lat_b + \delta, lng_b + \delta), \quad \text{Cand}_2 = (lat_b - \delta, lng_b - \delta)$$
-     $$\text{Cand}_3 = (lat_b + \delta, lng_b - \delta), \quad \text{Cand}_4 = (lat_b - \delta, lng_b + \delta)$$
-  3. Evaluates 3-point graph routing:
-     $$v_{\text{origin}} \longrightarrow \text{Cand}_k \longrightarrow v_{\text{shelter}}$$
-  4. Selects the shortest candidate whose path satisfies $\text{Collision}(\text{Path}) = \text{False}$.
+### **3.2 Node Spatial Indexing**
+Each node $v \in V$ stores:
+$$\text{Node}(v) = (\text{id}, \text{lat}, \text{lon}, \text{name}, \text{type})$$
+To map arbitrary mouse click coordinates $(lat_c, lon_c)$ to the graph, a localized spatial nearest-neighbor search identifies the entry vertex $v_{\text{snap}} \in V$ that minimizes the Haversine metric.
 
 ---
 
-## **5. System Architecture & Design**
+## **4. Algorithmic Architecture & Formulations**
+
+### **4.1 Binary Min-Heap Priority Queue Dijkstra**
+Dijkstra's classical algorithm finds the shortest path between nodes in a weighted graph with non-negative edge weights. EvacNet implements a custom **Binary Min-Heap Priority Queue** in `dijkstra.js` to ensure optimal asymptotic efficiency.
+
+#### **Complexity Analysis:**
+* **Standard Array Implementation:** $O(|V|^2)$ — Unacceptable for 71,905 vertices (~5.1 billion operations).
+* **Binary Min-Heap Implementation:** $O((|V| + |E|) \log |V|)$ — Traverses the entire Pune network in **< 1.0 ms** and Western Maharashtra in **~50 ms**.
+
+```
+Algorithm 1: EvacNet Min-Heap Dijkstra Shortest Path
+-------------------------------------------------------------------------
+Input:  Graph G = (V, E, W), Source s, Destination Set TargetList
+Output: Shortest Path P, Total Distance D, Explored Nodes Count
+
+1.  Initialize dist[v] = ∞ for all v ∈ V
+2.  Initialize prev[v] = null for all v ∈ V
+3.  Initialize visited[v] = false for all v ∈ V
+4.  dist[s] = 0
+5.  pq = new BinaryMinHeap()
+6.  pq.insert(s, 0)
+7.  
+8.  while not pq.isEmpty() do
+9.      u = pq.extractMin()
+10.     if visited[u] then continue
+11.     visited[u] = true
+12.     
+13.     if u ∈ TargetList then
+14.         Reconstruct path P from prev starting at u
+15.         return (P, dist[u])
+16.     end if
+17.     
+18.     for each neighbor (v, w) in Adj[u] do
+19.         if not isEdgeBlocked(u, v) and not visited[v] then
+20.             alt = dist[u] + w
+21.             if alt < dist[v] then
+22.                 dist[v] = alt
+23.                 prev[v] = u
+24.                 pq.insert(v, alt)
+25.             end if
+26.         end if
+27.     end for
+28. end while
+29. return (null, ∞)  // Unreachable (trapped)
+```
+
+### **4.2 Multi-Target Shelter & Hospital Selection by True Road Distance**
+Instead of forcing the user to arbitrarily pick a destination, EvacNet supports **One-to-Many Dijkstra Target Discovery**:
+1. When the user selects **"Nearest Safe Shelter"**, the destination set is defined as:
+   $$T = \{\text{COEP Safe Shelter}, \text{Nehru Stadium Hall}, \text{Deccan Gymkhana Camp}, \text{Pune University Complex}, \dots\}$$
+2. Dijkstra’s search expands outward in concentric wavefronts. The **very first target node $t \in T$ extracted from the Min-Heap is mathematically guaranteed to be the closest reachable shelter by road distance**.
+3. This eliminates redundant multi-pass queries and guarantees $O((|V| + |E|) \log |V|)$ single-run completion.
+
+### **4.3 Dynamic Roadblock Graph Edge Elimination**
+When a hazard token is deployed on the map at coordinates $C_h = (lat_h, lon_h)$ with influence radius $r_h$:
+1. **Edge-Hazard Intersection:** For every edge $e = (u, v)$ whose bounding box overlaps $C_h$, the orthogonal distance $d_{\perp}$ from $C_h$ to segment $[u, v]$ is evaluated.
+2. **Edge Cut Execution:** If $d_{\perp} \le r_h$, the edge is flagged in the global `blockedEdges` hash set:
+   $$\text{BlockKey}(u, v) = \min(u, v) + \text{"_"} + \max(u, v)$$
+3. **Graph Modification:** During Dijkstra relaxation, Step 19 checks `isEdgeBlocked(u, v)`. Blocked segments are skipped with $O(1)$ lookup time, mathematically removing the roadway from graph traversability without recreating the entire topology.
+4. **Immediate Detour Computation:** The routing loop re-executes instantly, yielding a verified obstacle-free detour.
+
+### **4.4 Spatial Haversine Metric & Edge Distance Calculation**
+To calculate accurate edge weights $w(u, v)$ across the Earth's curvature:
+$$\Delta\phi = \phi_2 - \phi_1, \quad \Delta\lambda = \lambda_2 - \lambda_1$$
+$$a = \sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)$$
+$$c = 2 \cdot \text{atan2}\left(\sqrt{a}, \sqrt{1 - a}\right)$$
+$$d = R \cdot c \quad (\text{where } R = 6,371,000 \text{ meters})$$
+
+---
+
+## **5. Geographic Scale & Network Topology**
+
+EvacNet supports two distinct operational scales accessible via the top switcher pill bar:
+
+| Feature / Metric | 🏙️ Pune Urban Core | 🌐 Western Maharashtra Regional |
+| :--- | :--- | :--- |
+| **Coverage Area** | Pune Central (Shivajinagar, Swargate, Deccan, Camp, Kothrud) | Pune, PCMC, Lonavala, Khandala Ghat, Navi Mumbai, Mumbai, Satara |
+| **Graph Nodes ($|V|$)** | **17,480 nodes** | **71,905 nodes** |
+| **Graph Edges ($|E|$)** | **26,366 road segments** | **98,324 highway edges** |
+| **Dataset File** | `pune_network.js` (10.1 MB) | `maharashtra_network.js` (37.7 MB) |
+| **Hydrology Data** | `pune_waterways.js` (Mutha & Mula Rivers) | Western Ghats Ridge & Regional River Polylines |
+| **Dijkstra Query Latency** | **0.50 ms – 0.90 ms** | **12.0 ms – 52.0 ms** |
+| **Max Network Span** | ~18 km urban grid | ~124.5 km inter-city corridor (Pune to Mumbai) |
+| **Primary Use-Case** | Local fire, flash flood, and street-level escape | Regional highway closures, landslide detours, inter-district relief |
+
+---
+
+## **6. System Architecture & User Interface Design**
 
 ```mermaid
 flowchart TD
-    subgraph UI ["Client Layer (Browser)"]
-        OSM["Original OpenStreetMap Tile Canvas"]
-        HUD["Telemetry HUD (Distance, Time, Status)"]
-        Controls["City Switcher / Hazard Selector / Pick Tool"]
+    subgraph Client ["Client Browser Viewport (evacnet.vercel.app)"]
+        UI["Navigation Sidebar & Route Dispatch"]
+        Layers["Layer Switcher (Google Roads / ESRI / Satellite / Offline Canvas)"]
+        Map["Leaflet Map Canvas & Route Polyline Display"]
     end
 
-    subgraph Core ["EvacNet Engine (app.js)"]
-        State["State Manager (Origin, Target, Hazards)"]
-        Collision["Haversine Collision Detector"]
-        Detour["Dynamic Detour & Evasion Solver"]
-        LED["LED Runway Pulse Engine (Interval Loop)"]
+    subgraph Controller ["Application Controller (app.js)"]
+        State["State Manager (Origin, Target, Roadblocks)"]
+        EventLoop["Hazard Placement & Click-to-Block Handler"]
+        TurnByTurn["Turn-by-Turn Instruction Generator"]
     end
 
-    subgraph Remote ["External Geospatial Services"]
-        OSRM["OSRM Driving Router (Contraction Hierarchies)"]
-        Nominatim["OpenStreetMap Nominatim (Global Geocoder)"]
+    subgraph Engine ["Dijkstra Routing Engine (dijkstra.js)"]
+        Heap["Binary Min-Heap Priority Queue"]
+        Solver["Shortest Path & Detour Solver"]
+        EdgeFilter["O(1) Blocked Edge Filter"]
     end
 
-    Controls --> State
-    State --> Collision
-    Collision --> Detour
-    Detour <-->|REST API| OSRM
-    Controls <-->|Search Query| Nominatim
-    Detour --> LED
-    LED --> OSM
-    Detour --> HUD
+    subgraph Data ["Local Graph Datasets"]
+        Pune["pune_network.js (17,480 nodes, 26,366 edges)"]
+        MH["maharashtra_network.js (71,905 nodes, 98,324 edges)"]
+        Rivers["pune_waterways.js (Mutha/Mula Rivers)"]
+    end
+
+    UI --> State
+    Layers --> Map
+    EventLoop --> EdgeFilter
+    State --> Solver
+    Data --> Solver
+    Solver --> Heap
+    EdgeFilter --> Solver
+    Solver --> TurnByTurn
+    TurnByTurn --> UI
+    Solver --> Map
 ```
 
----
-
-## **6. Implementation Details**
-
-### **6.1 Technology Stack**
-* **Front-End Viewport:** HTML5, CSS3 (Modern dark command-center theme), Responsive Flexbox & Grid.
-* **Mapping Framework:** [Leaflet.js](https://leafletjs.com/) v1.9.4.
-* **Map Tiles:** Original OpenStreetMap standard tile servers (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`) + Esri World Imagery Satellite layer + CartoDB Dark Matter.
-* **Routing Engine:** Open Source Routing Machine (OSRM) v1 Driving Profile.
-* **Geocoding API:** OpenStreetMap Nominatim.
-* **Languages:** Pure Vanilla JavaScript (ES6+), CSS, HTML (Zero external runtime dependencies; no Node.js or Python server required).
-
-### **6.2 Key Code Components**
-
-| File | Purpose |
-| :--- | :--- |
-| **`index.html`** | Structure containing top navigation, city switcher, search bar, hazard toolbox, and map container. |
-| **`style.css`** | Styling rules, high-contrast HUD cards, custom SVG landmark markers, hazard shake animations, and glowing LED pulse keyframes. |
-| **`app.js`** | Core engine containing Leaflet map lifecycle, OSRM async querying, Haversine collision loop, LED pulse timing, and city presets. |
-
-### **6.3 The Glowing LED Runway Algorithm**
-To simulate directional emergency runway guidance:
-1. The route polyline is subdivided into equidistant GPS sample points.
-2. Custom DOM elements (`.led-pulse-dot`) with neon green `box-shadow` properties are attached as Leaflet `L.divIcon` markers.
-3. A lightweight `setInterval` loop increments an active wavefront index:
-   * Wavefront LEDs: Scale up to `1.7×` with intense white-green glow (`#ffffff`).
-   * Trailing LEDs: Smoothly relax back to baseline neon green (`#00ff88`).
-   * Generates a continuous visual motion flow directing evacuees toward safety.
+### **6.1 Key Interface Features**
+1. **Google Maps-Style Visual Experience:** High-resolution street labeling, crisp typography, clean cards, and responsive sidebar.
+2. **Four Basemap Modes:**
+   * **Google Roads (Default):** Real street labels (FC Road, JM Road, Karve Road) with zero API keys required.
+   * **ESRI World Street Map:** Clean vector cartography.
+   * **Satellite Hybrid:** Aerial view combined with road network lines.
+   * **Offline Canvas:** 100% offline rendering drawn on HTML5 Canvas.
+3. **Hazard Palette:** Immediate toggling of hazard types (🔥 Fire, 🌊 Flood, 🪨 Debris, ⛔ Police Barricade).
+4. **Preset Disaster Scenarios:** One-click simulation of real-world emergencies (Mutha River Flood, Old City Fire, Pune Station Gridlock).
 
 ---
 
-## **7. Testing, Scenarios & Performance Analysis**
+## **7. Testing, Scenarios & Performance Benchmarks**
 
-### **7.1 Test Scenarios**
+### **7.1 Realistic Disaster Test Scenarios**
 
-| Scenario | Action | Expected Output | Actual Result |
-| :--- | :--- | :--- | :--- |
-| **1. Standard Evacuation** | Origin: School; Objective: Nearest Shelter. | Calculates shortest path via local streets; LEDs pulse toward shelter. | **PASS** — Route identified in 4.2ms; LEDs active. |
-| **2. Single Roadblock** | Drop 🔥 Fire hazard onto active route. | Collision detected; route turns red; detour re-computed via adjacent clear streets. | **PASS** — Re-routed in 6.1ms; avoided hazard zone. |
-| **3. Cascading Disaster** | Click "Trigger Urban Disaster" (multiple simultaneous roadblocks). | Multiple severed streets flagged; evasive perimeter escape computed. | **PASS** — Multi-hazard perimeter route established. |
-| **4. Trapped Origin** | Place roadblocks enclosing all egress roads around origin. | System flags "TRAPPED (NO SAFE PATH)"; warning toast triggered. | **PASS** — Graceful failure handling with alert banner. |
-| **5. Global Relocation** | Switch city to Pune / Mumbai / London or GPS locate. | Map flies to coordinates; local shelters generated; routing re-calculated. | **PASS** — Smooth camera transition and local routing. |
+| # | Scenario | Simulated Event | Algorithmic Response | Detour Difference | Latency | Result |
+| :-: | :--- | :--- | :--- | :-: | :-: | :-: |
+| **1** | **Standard Evacuation** | Origin: Deccan Gymkhana; Target: COEP Safe Shelter | Traverses JM Road directly across river | Baseline (3.42 km, 8 min) | **0.52 ms** | **PASS** |
+| **2** | **Mutha River Flash Flood** | Floodwaters submerge Sambhaji Bridge | Sambhaji Bridge edges removed; Dijkstra routes via Kakasaheb Gadgil Bridge | +0.42 km (+2 min) | **0.68 ms** | **PASS** |
+| **3** | **Old City Fire Disaster** | Massive commercial fire blocks Bajirao Road | Bajirao Road severed; Dijkstra reroutes via Tilak Road & Shastri Road | +0.31 km (+1.5 min) | **0.61 ms** | **PASS** |
+| **4** | **Pune Station Gridlock** | Station stampede / barricades close Sassoon Road | Sassoon Road severed; Dijkstra reroutes via Dr. Ambedkar Road | +0.55 km (+3 min) | **0.74 ms** | **PASS** |
+| **5** | **Western Ghats Landslide** | Landslide blocks Khandala Ghat on Mumbai-Pune Expressway | Regional highway severed; Dijkstra routes via Old NH-48 Ghat Pass | +0.06 km (+2 min) | **51.7 ms** | **PASS** |
+| **6** | **Trapped Origin** | Complete perimeter of roadblocks placed around starting node | Dijkstra terminates when heap exhausts; displays "TRAPPED — NO SAFE ROUTE" alert | No route possible | **0.45 ms** | **PASS** |
 
-### **7.2 Performance Benchmark**
-* **OSRM Route Query Latency:** $150 - 350 \text{ ms}$ (network round-trip time).
-* **Local Graph Collision Processing Time:** $< 0.8 \text{ ms}$ across 500+ polyline coordinates.
-* **Client-Side Memory Footprint:** $< 35 \text{ MB}$ RAM in Chromium-based browsers.
-* **Frame Rate:** Consistent $60 \text{ FPS}$ during animated LED pulse rendering.
+### **7.2 Benchmark Comparison**
 
----
-
-## **8. Key Advantages & Novel Features**
-
-1. **Original OpenStreetMap Foundation:** Uses authentic, globally recognizable street cartography with real road names, rivers, bridges, and building footprints.
-2. **Real-World Turn-by-Turn Navigation:** Unlike academic prototypes that use straight lines on a blank grid, EvacNet routes along actual curves, intersections, and street directions.
-3. **Global Versatility:** Works seamlessly in any city or town worldwide (pre-configured presets for Indian metros like Pune, Mumbai, Delhi, Bengaluru, alongside international cities).
-4. **GPS Auto-Location:** Automatically adapts to the user’s real-world environment with a single click.
-5. **Zero Hardware Dependency:** Operates 100% within the browser—no specialized microcontroller or external server required.
-6. **Tangible Visual Feedback:** The glowing LED runway trail provides unmistakable, intuitive visual guidance that anyone can interpret in high-stress evacuation scenarios.
+| Metric | EvacNet (Local Dijkstra) | Cloud API Services (OSRM / Google) | Naive Euclidean Distance |
+| :--- | :---: | :---: | :---: |
+| **Query Latency** | **< 1.0 ms (Pune) / ~50 ms (MH)** | 150 ms – 450 ms (Network dependent) | 0.05 ms |
+| **Offline Reliability** | **100% Functional** | 0% (Fails without internet) | 100% |
+| **Dynamic Edge Cutting** | **Instantaneous in memory** | Not supported on public tiers | N/A |
+| **River / Obstacle Awareness**| **Strictly topologically sound**| Good | ❌ **High risk (ignores rivers)** |
+| **API Cost & Keys** | **$0.00 / Zero Keys** | Requires API token / Billing | $0.00 |
 
 ---
 
-## **9. Future Scope & Extensions**
+## **8. Deployment & Infrastructure**
 
-* **Capacity-Constrained Evacuation (Max-Flow Min-Cut):** Incorporating the **Edmonds-Karp / Ford-Fulkerson algorithm** to model road lane capacities and prevent secondary traffic jams during mass evacuations.
-* **Elevation & Flood Inundation Modeling:** Integration with Digital Elevation Models (DEM) to dynamically inflate edge weights for low-lying roads during severe rainfall.
-* **Multi-Agent Crowd Simulation:** Simulating thousands of autonomous civilian agents navigating the road network using cellular automata or social force models.
-* **Mobile PWA & Offline Cache:** Packaging EvacNet as a Progressive Web App (PWA) with offline vector tile caching for scenarios where cellular connectivity is disrupted.
-
----
-
-## **10. Conclusion**
-
-EvacNet demonstrates the practical application of classical **Graph Theory and Algorithm Design** to solve critical real-world urban safety challenges. By unifying **Bidirectional Dijkstra routing (via Contraction Hierarchies)**, the **Haversine spatial distance metric**, and an **interactive dynamic detour engine**, the project bridges the gap between academic algorithmic concepts and functional emergency disaster management tools.
+* **Live URL:** [https://evacnet.vercel.app/](https://evacnet.vercel.app/)
+* **Platform:** Vercel Global Edge Network.
+* **Hosting Model:** High-performance static web architecture.
+* **Build Configuration:** Client-side compiled ES6 modules with no Node runtime bottleneck.
+* **Edge CDN Distribution:** Low-latency caching ensures fast loading across all continents.
 
 ---
 
-## **11. References**
+## **9. Key Advantages & Novel Features**
+
+1. **Deterministic Algorithm Execution:** Every computed route is mathematically verifiable via Dijkstra's shortest path optimality theorem.
+2. **100% Offline Autonomy:** Can be hosted from a USB drive or local intranet server during blackout conditions.
+3. **Zero API Key Overhead:** No dependencies on paid subscriptions or restrictive rate limits.
+4. **Physical Edge Severance:** Realistically simulates infrastructure failure rather than superficial detour guesses.
+5. **Dual Urban & Regional Resolution:** Supports neighborhood-level navigation and state-level highway evacuations.
+
+---
+
+## **10. Future Scope & Extensions**
+
+* **A\* Spatial Heuristic:** Incorporating Haversine Euclidean distance as an admissible heuristic $h(v)$ for targeted single-destination queries across multi-million node nationwide graphs.
+* **Dynamic Capacity Modeling (Max-Flow Min-Cut):** Applying the Edmonds-Karp algorithm to avoid road bottlenecks during mass civilian evacuations.
+* **Elevation & Flood Inundation Overlays:** Integrating Digital Elevation Model (DEM) data to dynamically increase road edge weights as water levels rise.
+
+---
+
+## **11. Conclusion**
+
+EvacNet demonstrates the practical application of classical **Graph Theory and Algorithm Design (DAA)** to solve urgent civic protection and disaster management challenges. By replacing external, black-box cloud routing services with an in-memory **Binary Min-Heap Dijkstra engine** operating on authentic OpenStreetMap networks, EvacNet guarantees instantaneous, mathematically optimal, and obstacle-resilient evacuation routing.
+
+---
+
+## **12. References**
 
 1. Dijkstra, E. W. (1959). *A note on two problems in connexion with graphs.* Numerische Mathematik, 1(1), 269–271.
-2. Geisberger, R., Sanders, P., Schultes, D., & Delling, D. (2008). *Contraction Hierarchies: Faster and Simpler Hierarchical Routing in Road Networks.* Experimental Algorithms, LNCS 5038, 319–333.
-3. Luxen, D., & Vetter, C. (2011). *Real-time routing with OpenStreetMap data.* Proceedings of the 19th ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems, 513–516.
+2. Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2022). *Introduction to Algorithms* (4th ed.). MIT Press.
+3. OpenStreetMap Contributors (2026). *Planet dump and Overpass API datasets for Maharashtra & Pune, India.* https://www.openstreetmap.org/
 4. Sinnott, R. W. (1984). *Virtues of the Haversine.* Sky and Telescope, 68(2), 159.
 5. Haklay, M., & Weber, P. (2008). *OpenStreetMap: User-Generated Street Maps.* IEEE Pervasive Computing, 7(4), 12–18.

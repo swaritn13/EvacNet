@@ -3,240 +3,248 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EvacNet — Global Emergency Evacuation Route Planner</title>
-  <!-- Google Fonts -->
+  <title>EvacNet — Pune Emergency Evacuation & Dijkstra Routing</title>
+  <!-- Google Fonts: Roboto & Google Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Local Leaflet CSS (100% Offline) with CDN Fallback -->
+  <link rel="stylesheet" href="lib/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app-layout">
-    <!-- Top Header -->
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-badge">🚨</div>
-        <div>
-          <h1>EvacNet <span class="badge-tag">GLOBAL EDITION</span></h1>
-          <p class="subtitle">Dynamic Evacuation Routing & Roadblock Detours Anywhere in the World</p>
+    <!-- Google Maps Style Directions Sidebar -->
+    <aside class="sidebar">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <div class="brand-wrapper">
+          <div class="brand-icon">🧭</div>
+          <div>
+            <div class="brand-title">
+              EvacNet
+              <span class="brand-badge">Offline</span>
+            </div>
+            <div class="brand-sub">OpenStreetMap Graph • Dijkstra Shortest Path</div>
+          </div>
         </div>
       </div>
 
-      <!-- City Switcher & Search Bar -->
-      <div class="header-city-controls">
-        <select id="cityPresetSelect" class="header-select">
-          <option value="locate_me">📍 Use My Current Location (GPS)</option>
-          <optgroup label="India 🇮🇳">
-            <option value="pune" selected>🇮🇳 Pune, Maharashtra</option>
-            <option value="mumbai">🇮🇳 Mumbai, Maharashtra</option>
-            <option value="delhi">🇮🇳 New Delhi</option>
-            <option value="bengaluru">🇮🇳 Bengaluru, Karnataka</option>
-          </optgroup>
-          <optgroup label="International 🌐">
-            <option value="london">🇬🇧 London, UK</option>
-            <option value="tokyo">🇯🇵 Tokyo, Japan</option>
-            <option value="nyc">🇺🇸 New York City, USA</option>
-          </optgroup>
-        </select>
-
-        <div class="header-search">
-          <input type="text" id="citySearchInput" placeholder="🔍 Search any city, town, or address..." autocomplete="off">
-          <button id="btnSearchCity" class="btn-search">Go</button>
-        </div>
+      <!-- Scope Switcher: Pune City vs Maharashtra State -->
+      <div class="scope-toggle-bar">
+        <button id="btnScopePune" class="scope-pill-btn active">🏙️ Pune City Core</button>
+        <button id="btnScopeMh" class="scope-pill-btn">🌐 Western Maharashtra</button>
       </div>
 
-      <!-- Metrics Badges -->
-      <div class="header-metrics">
-        <div class="stat-pill">
-          <span class="stat-label">Route Status</span>
-          <span class="stat-val status-safe" id="headerRouteStatus">Active</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-label">Real Distance</span>
-          <span class="stat-val" id="headerDistance">-- m</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-label">Est. Evac Time</span>
-          <span class="stat-val" id="headerTime">-- min</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-label">Roadblocks</span>
-          <span class="stat-val stat-alert" id="headerBlockedCount">0</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- Workspace -->
-    <div class="workspace">
-      <!-- Sidebar Controls -->
-      <aside class="sidebar">
+      <!-- Scrollable Navigation Content -->
+      <div class="sidebar-content">
         <!-- Route Dispatch Card -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3>📍 Evacuation Route Dispatch</h3>
+        <div class="route-dispatch-card">
+          <!-- Start Input -->
+          <div class="input-row">
+            <div class="input-icon-dot dot-start"></div>
+            <select id="startNodeSelect" class="styled-select"></select>
+            <button id="btnPickStartOnMap" class="btn-pick-pin" title="Click on map to pick custom start point">
+              📍 Pick
+            </button>
           </div>
-          
-          <!-- Origin -->
-          <div class="field-group">
-            <label for="startNodeSelect">Evacuation Origin (Start Point):</label>
-            <div class="input-with-action">
-              <select id="startNodeSelect" class="styled-select"></select>
-              <button id="btnPickStartOnMap" class="btn-icon-action" title="Click anywhere on the map to set custom Start Point">🎯 Pick</button>
+
+          <!-- Destination Input -->
+          <div class="input-row">
+            <div class="input-icon-dot dot-end"></div>
+            <select id="targetModeSelect" class="styled-select">
+              <option value="nearest_shelter">🛡️ Nearest Safe Shelter (By Road Distance)</option>
+              <option value="nearest_hospital">🏥 Nearest Emergency Hospital (By Road Distance)</option>
+              <option value="custom_landmark">🎯 Specific Pune Landmark / Shelter</option>
+              <option value="map_click">📍 Custom Clicked Point on Map</option>
+            </select>
+            <button id="btnPickDestOnMap" class="btn-pick-pin" title="Click on map to pick custom destination">
+              📍 Pick
+            </button>
+          </div>
+
+          <!-- Specific Landmark Selector (Dynamic) -->
+          <div id="customTargetWrapper" style="display: none;">
+            <div class="input-row" style="margin-top: 4px;">
+              <span style="font-size: 0.75rem; color: var(--gm-text-sub);">Landmark:</span>
+              <select id="specificLandmarkSelect" class="styled-select"></select>
             </div>
-            <span class="field-subtext" id="startLocationLabel">Selected: School Sector</span>
           </div>
-
-          <!-- Destination -->
-          <div class="field-group">
-            <label for="targetModeSelect">Destination Objective (Safe Zone):</label>
-            <div class="input-with-action">
-              <select id="targetModeSelect" class="styled-select">
-                <option value="nearest_shelter">🛡️ Nearest Emergency Safe Shelter</option>
-                <option value="nearest_hospital">🏥 Nearest Medical Emergency Hospital</option>
-                <option value="custom_target">🎯 Specific Local Landmark</option>
-                <option value="map_click">📍 Custom Clicked Point on Map</option>
-              </select>
-              <button id="btnPickDestOnMap" class="btn-icon-action" title="Click anywhere on the map to set custom Destination">🎯 Pick</button>
-            </div>
-            <span class="field-subtext" id="targetLocationLabel">Selected: Nearest Safe Shelter</span>
-          </div>
-
-          <div class="field-group" id="customTargetWrapper" style="display: none;">
-            <label for="targetNodeSelect">Specific Landmark:</label>
-            <select id="targetNodeSelect" class="styled-select"></select>
-          </div>
-
-          <button id="btnRecalculate" class="action-btn btn-primary">
-            ⚡ Compute Optimal Route on Real Roads
-          </button>
         </div>
 
-        <!-- Roadblock & Hazard Placement Card -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3>🚧 Road Obstruction & Hazard Injection</h3>
+        <!-- Google Maps Travel Summary Card -->
+        <div class="trip-summary-card">
+          <div class="summary-header">
+            <div class="trip-time" id="tripTimeText">
+              <span>-- min</span>
+              <span class="trip-dist" id="tripDistText">(-- km)</span>
+            </div>
+            <span class="dijkstra-badge" id="dijkstraTimeText">⚡ -- ms</span>
           </div>
-          
-          <div class="click-mode-toggle">
-            <button id="modeNavigate" class="mode-btn active">
+          <div class="trip-subtext" id="tripSubtext">
+            Fastest route via open Pune streets • 0 roadblocks
+          </div>
+        </div>
+
+        <!-- Live Detour Alert Box (Visible when roadblock detours route) -->
+        <div id="detourAlertBox" class="detour-alert-box" style="display: none;">
+          <strong>⚠️ Active Detour Recalculated</strong>
+          <span id="detourAlertText">Dijkstra detected blocked street and bypassed onto adjacent roads.</span>
+        </div>
+
+        <!-- Turn-by-Turn Real Street Directions -->
+        <div class="directions-card">
+          <div class="section-title">
+            <span>Turn-by-Turn Navigation</span>
+            <span style="font-size: 0.7rem; color: var(--gm-text-sub);" id="stepCountText">0 steps</span>
+          </div>
+          <div class="directions-scroll" id="turnByTurnList">
+            <div style="font-size: 0.76rem; color: var(--gm-text-sub); text-align: center; padding: 12px;">
+              Directions will appear here.
+            </div>
+          </div>
+        </div>
+
+        <!-- Roadblock & Hazard Injection Section -->
+        <div class="section-card">
+          <div class="section-title">
+            <span>Roadblock & Closures</span>
+            <span class="brand-badge" style="background: var(--gm-red-light); color: var(--gm-red);" id="activeBlocksBadge">0 Active</span>
+          </div>
+
+          <!-- Mode Toggle Group -->
+          <div class="mode-toggle-group">
+            <button id="modeNavigate" class="btn-mode active">
               ✋ Pan & Explore
             </button>
-            <button id="modeBlockRoad" class="mode-btn mode-hazard">
-              🚧 Click Map to Block Road
+            <button id="modeBlockRoad" class="btn-mode mode-hazard">
+              🚧 Click Map to Block
             </button>
           </div>
-          
-          <p class="panel-hint" id="hazardInstruction">
-            Switch to <strong>"Click Map to Block Road"</strong> and click anywhere along the green route to simulate a blockage!
-          </p>
 
-          <div class="hazard-palette">
-            <label class="hazard-type-chip active" data-hazard="fire">
+          <!-- Hazard Palette -->
+          <div class="hazard-chips">
+            <label class="chip-item active" data-hazard="fire">
               <input type="radio" name="hazardType" value="fire" checked> 🔥 Fire
             </label>
-            <label class="hazard-type-chip" data-hazard="flood">
+            <label class="chip-item" data-hazard="flood">
               <input type="radio" name="hazardType" value="flood"> 🌊 Flood
             </label>
-            <label class="hazard-type-chip" data-hazard="debris">
+            <label class="chip-item" data-hazard="debris">
               <input type="radio" name="hazardType" value="debris"> 🪨 Debris
             </label>
-            <label class="hazard-type-chip" data-hazard="police">
-              <input type="radio" name="hazardType" value="police"> ⛔ Police
+            <label class="chip-item" data-hazard="police">
+              <input type="radio" name="hazardType" value="police"> ⛔ Closed
             </label>
           </div>
 
-          <div class="scenario-buttons">
-            <button id="btnDisasterScenario" class="action-btn btn-danger">
-              💥 Trigger Urban Disaster
+          <!-- Quick Pune Scenarios -->
+          <div class="section-title" style="margin-top: 4px; font-size: 0.72rem;">
+            <span>Pune Disaster Scenarios</span>
+          </div>
+          <div class="scenario-list">
+            <button id="btnScenarioFlood" class="btn-scenario-pill">
+              🌊 Mutha River Flood (Blocks Sambhaji Bridge)
             </button>
-            <button id="btnClearBlockades" class="action-btn btn-outline">
-              🔄 Clear All Roadblocks
+            <button id="btnScenarioFire" class="btn-scenario-pill">
+              🔥 Old City Fire (Blocks Bajirao Road)
+            </button>
+            <button id="btnScenarioStation" class="btn-scenario-pill">
+              ⛔ Station Gridlock (Blocks Sassoon Road)
             </button>
           </div>
 
-          <!-- Active Blocked Roads List -->
-          <div class="blocked-roads-container">
-            <span class="subheading">Active Roadblocks (<span id="activeBlockCount">0</span>):</span>
-            <div id="blockedRoadsList" class="blocked-list">
-              <div class="empty-state">No roadblocks. All roads open.</div>
+          <!-- Active Closed Streets List -->
+          <div class="closed-streets-list" id="closedStreetsList"></div>
+
+          <button id="btnClearBlockades" class="btn-clear-all">
+            🔄 Clear All Roadblocks & Restore Open Roads
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center/Right Map Viewport -->
+    <main class="map-viewport">
+      <!-- Floating Status Pill -->
+      <div class="floating-status-pill" id="mapModeNotice">
+        💡 Click <strong>"🚧 Click Map to Block"</strong>, then click any street to simulate a physical road closure!
+      </div>
+
+      <!-- Floating Layer Switcher (Google Maps Style) -->
+      <div class="floating-layer-switcher">
+        <button id="btnLayerToggle" class="layer-pill-btn" title="Map Layers & Types">
+          <span style="font-size: 16px;">🗺️</span> <span>Layers</span>
+        </button>
+        <div class="layer-dropdown hidden" id="layerDropdown">
+          <div class="layer-dropdown-title">MAP BASEMAP</div>
+          <div class="layer-option active" data-layer="google_roads">
+            <span class="layer-icon">🗺️</span>
+            <div class="layer-text">
+              <div class="layer-name">Google Roads</div>
+              <div class="layer-desc">Official crisp streets & labels</div>
             </div>
           </div>
+          <div class="layer-option" data-layer="esri_streets">
+            <span class="layer-icon">🏙️</span>
+            <div class="layer-text">
+              <div class="layer-name">ESRI World Street</div>
+              <div class="layer-desc">Clean vector roads & terrain</div>
+            </div>
+          </div>
+          <div class="layer-option" data-layer="google_satellite">
+            <span class="layer-icon">🛰️</span>
+            <div class="layer-text">
+              <div class="layer-name">Satellite Hybrid</div>
+              <div class="layer-desc">Aerial satellite + street overlays</div>
+            </div>
+          </div>
+          <div class="layer-option" data-layer="offline_canvas">
+            <span class="layer-icon">⚡</span>
+            <div class="layer-text">
+              <div class="layer-name">Offline Canvas</div>
+              <div class="layer-desc">100% offline local graph</div>
+            </div>
+          </div>
+          <div class="layer-dropdown-divider"></div>
+          <label class="layer-toggle-check">
+            <input type="checkbox" id="chkShowGraphOverlay">
+            <span>Show Graph Network Wireframe</span>
+          </label>
         </div>
+      </div>
 
-        <!-- LED Path Guidance Settings -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3>💡 Glowing LED Trail (Runway Effect)</h3>
-          </div>
-          <div class="toggle-row">
-            <span>Animated Glowing LEDs:</span>
-            <label class="switch">
-              <input type="checkbox" id="toggleLedAnimation" checked>
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div class="field-group" style="margin-top: 10px;">
-            <label>LED Pulse Flow Speed:</label>
-            <input type="range" id="ledSpeedRange" min="1" max="5" value="3" class="slider-range">
-          </div>
-          <div class="field-group">
-            <label>LED Color Theme:</label>
-            <select id="ledColorTheme" class="styled-select">
-              <option value="green">🟢 Neon Green (Safety Standard)</option>
-              <option value="cyan">🔵 Cyan Laser Flow</option>
-              <option value="amber">🟡 High-Contrast Amber</option>
-            </select>
-          </div>
-        </div>
+      <!-- Floating Legend (Google Maps Style) -->
+      <div class="floating-legend">
+        <div class="legend-row"><span class="dot-indicator dot-origin"></span> Evacuation Origin</div>
+        <div class="legend-row"><span class="dot-indicator dot-shelter"></span> Safe Shelter (COEP, Nehru Stadium, etc.)</div>
+        <div class="legend-row"><span class="dot-indicator dot-hospital"></span> Hospital (Sassoon, KEM, Ruby Hall)</div>
+        <div class="legend-row"><span class="dot-indicator dot-hazard"></span> Blocked Street (Physical Edge Cut)</div>
+        <div class="legend-row"><span class="dot-indicator dot-route"></span> Dijkstra Shortest Route</div>
+      </div>
 
-        <!-- Turn-by-Turn Directions -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3>🧭 Turn-by-Turn Street Navigation</h3>
-          </div>
-          <div id="turnByTurnList" class="directions-list">
-            <div class="empty-state">Route instructions will appear here.</div>
-          </div>
-        </div>
-      </aside>
+      <!-- Map Container -->
+      <div id="map"></div>
 
-      <!-- Center Map Viewport -->
-      <main class="map-container">
-        <!-- Floating Helper Tips -->
-        <div class="map-floating-tip" id="mapModeNotice">
-          💡 Click <strong>"🚧 Click Map to Block Road"</strong> on the left, then click along the green route to see the algorithm find a new detour!
-        </div>
-
-        <!-- Floating Legend -->
-        <div class="map-floating-legend">
-          <div class="legend-badge"><span class="icon-dot hospital"></span> Hospital</div>
-          <div class="legend-badge"><span class="icon-dot school"></span> School / University</div>
-          <div class="legend-badge"><span class="icon-dot fire"></span> Fire Station</div>
-          <div class="legend-badge"><span class="icon-dot shelter"></span> Safe Shelter</div>
-          <div class="legend-badge"><span class="icon-dot blocked"></span> Blocked Road / Hazard</div>
-          <div class="legend-badge"><span class="icon-dot route"></span> Glowing LED Street Route</div>
-        </div>
-
-        <!-- Leaflet Map Container -->
-        <div id="map"></div>
-
-        <!-- Toast Notification for Dynamic Reroute -->
-        <div id="rerouteToast" class="reroute-toast hidden">
-          <div class="toast-icon">⚡</div>
-          <div class="toast-content">
-            <h4 id="toastTitle">Dynamic Reroute Triggered</h4>
-            <p id="toastMessage">Road blocked! New optimal detour calculated on real streets.</p>
-          </div>
-        </div>
-      </main>
-    </div>
+      <!-- Google Maps Style Snackbar Toast -->
+      <div id="gmSnackbar" class="gm-snackbar hidden">
+        <span class="snackbar-icon" id="snackbarIcon">⚡</span>
+        <span id="snackbarText">Dijkstra recalculated route around roadblock!</span>
+      </div>
+    </main>
   </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <!-- Main Application Script -->
+  <!-- Local Leaflet JS with Fallback -->
+  <script src="lib/leaflet.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';document.head.appendChild(s);"></script>
+  <!-- Pune Offline Road Network Data (17,480 nodes, 26,366 edges) -->
+  <script src="pune_network.js"></script>
+  <!-- Western Maharashtra Regional Highway Network (71,905 nodes, 98,324 edges) -->
+  <script src="maharashtra_network.js"></script>
+  <!-- Pune Waterways Data (Mutha & Mula Rivers) -->
+  <script src="pune_waterways.js"></script>
+  <!-- Dijkstra Routing Engine -->
+  <script src="dijkstra.js"></script>
+  <!-- Application Controller -->
   <script src="app.js"></script>
 </body>
 </html>
